@@ -76,6 +76,9 @@ AuditLogEvent = Literal[
     90,
     91,
     92,
+    100,
+    101,
+    102,
     110,
     111,
     112,
@@ -118,6 +121,7 @@ class _AuditLogChange_Snowflake(TypedDict):
         "channel_id",
         "inviter_id",
         "guild_id",
+        "sku_ids"
     ]
     new_value: Snowflake
     old_value: Snowflake
@@ -157,6 +161,9 @@ class _AuditLogChange_Int(TypedDict):
         "user_limit",
         "auto_archive_duration",
         "default_auto_archive_duration",
+        "entity_type",
+        "status",
+        "sku_ids",
     ]
     new_value: int
     old_value: int
