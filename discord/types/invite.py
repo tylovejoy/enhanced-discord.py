@@ -26,6 +26,8 @@ from __future__ import annotations
 
 from typing import Literal, Optional, TypedDict, Union
 
+
+from .scheduled_events import ScheduledEvent
 from .snowflake import Snowflake
 from .guild import InviteGuild, _GuildPreviewUnique
 from .channel import PartialChannel
@@ -41,6 +43,7 @@ class _InviteOptional(TypedDict, total=False):
     target_user: PartialUser
     target_type: InviteTargetType
     target_application: PartialAppInfo
+    guild_scheduled_event: ScheduledEvent
 
 
 class _InviteMetadata(TypedDict, total=False):

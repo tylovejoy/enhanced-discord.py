@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import re
 import inspect
+from urllib.parse import parse_qs
 from typing import (
     Any,
     Dict,
@@ -729,8 +730,14 @@ class InviteConverter(Converter[discord.Invite]):
 
     async def convert(self, ctx: Context, argument: str) -> discord.Invite:
         try:
-            invite = await ctx.bot.fetch_invite(argument)
-            return invite
+            event_id = None
+            if "?" in argument:
+                argument, query_params_raw = argument.split("?", 1)
+                query_params = {k: v[0] for k, v in parse_qs(query_params_raw).items()}
+
+                event_id = query_params.get("event")
+
+            return await ctx.bot.fetch_invite(argument, scheduled_event_id=event_id)
         except Exception as exc:
             raise BadInviteArgument(argument) from exc
 

@@ -31,6 +31,7 @@ from .object import Object
 from .mixins import Hashable
 from .enums import ChannelType, VerificationLevel, InviteTarget, try_enum
 from .appinfo import PartialAppInfo
+from .scheduled_events import ScheduledEvent
 
 __all__ = (
     "PartialInviteChannel",
@@ -233,25 +234,27 @@ class Invite(Hashable):
 
     The following table illustrates what methods will obtain the attributes:
 
-    +------------------------------------+------------------------------------------------------------+
-    |             Attribute              |                          Method                            |
-    +====================================+============================================================+
-    | :attr:`max_age`                    | :meth:`abc.GuildChannel.invites`\, :meth:`Guild.invites`   |
-    +------------------------------------+------------------------------------------------------------+
-    | :attr:`max_uses`                   | :meth:`abc.GuildChannel.invites`\, :meth:`Guild.invites`   |
-    +------------------------------------+------------------------------------------------------------+
-    | :attr:`created_at`                 | :meth:`abc.GuildChannel.invites`\, :meth:`Guild.invites`   |
-    +------------------------------------+------------------------------------------------------------+
-    | :attr:`temporary`                  | :meth:`abc.GuildChannel.invites`\, :meth:`Guild.invites`   |
-    +------------------------------------+------------------------------------------------------------+
-    | :attr:`uses`                       | :meth:`abc.GuildChannel.invites`\, :meth:`Guild.invites`   |
-    +------------------------------------+------------------------------------------------------------+
-    | :attr:`approximate_member_count`   | :meth:`Client.fetch_invite` with `with_counts` enabled     |
-    +------------------------------------+------------------------------------------------------------+
-    | :attr:`approximate_presence_count` | :meth:`Client.fetch_invite` with `with_counts` enabled     |
-    +------------------------------------+------------------------------------------------------------+
-    | :attr:`expires_at`                 | :meth:`Client.fetch_invite` with `with_expiration` enabled |
-    +------------------------------------+------------------------------------------------------------+
+    +------------------------------------+-----------------------------------------------------------------+
+    |             Attribute              |                             Method                              |
+    +====================================+=================================================================+
+    | :attr:`max_age`                    | :meth:`abc.GuildChannel.invites`\, :meth:`Guild.invites`        |
+    +------------------------------------+-----------------------------------------------------------------+
+    | :attr:`max_uses`                   | :meth:`abc.GuildChannel.invites`\, :meth:`Guild.invites`        |
+    +------------------------------------+-----------------------------------------------------------------+
+    | :attr:`created_at`                 | :meth:`abc.GuildChannel.invites`\, :meth:`Guild.invites`        |
+    +------------------------------------+-----------------------------------------------------------------+
+    | :attr:`temporary`                  | :meth:`abc.GuildChannel.invites`\, :meth:`Guild.invites`        |
+    +------------------------------------+-----------------------------------------------------------------+
+    | :attr:`uses`                       | :meth:`abc.GuildChannel.invites`\, :meth:`Guild.invites`        |
+    +------------------------------------+-----------------------------------------------------------------+
+    | :attr:`approximate_member_count`   | :meth:`Client.fetch_invite` with `with_counts` enabled          |
+    +------------------------------------+-----------------------------------------------------------------+
+    | :attr:`approximate_presence_count` | :meth:`Client.fetch_invite` with `with_counts` enabled          |
+    +------------------------------------+-----------------------------------------------------------------+
+    | :attr:`expires_at`                 | :meth:`Client.fetch_invite` with `with_expiration` enabled      |
+    +------------------------------------+-----------------------------------------------------------------+
+    | :attr:`scheduled_event`            | :meth:`Client.fetch_invite` with `scheduled_event_id` specified |
+    +------------------------------------+-----------------------------------------------------------------+
 
     If it's not in the table above then it is available by all methods.
 
@@ -288,7 +291,10 @@ class Invite(Hashable):
         `Client.fetch_invite` with `with_expiration` enabled, the invite will never expire.
 
         .. versionadded:: 2.0
+    scheduled_event: Optional[:class:`ScheduledEvent`]
+        The guild scheduled event the invite is for.
 
+        .. versionadded:: 2.0
     channel: Union[:class:`abc.GuildChannel`, :class:`Object`, :class:`PartialInviteChannel`]
         The channel the invite is for.
     target_type: :class:`InviteTarget`
@@ -324,6 +330,7 @@ class Invite(Hashable):
         "approximate_member_count",
         "approximate_presence_count",
         "target_application",
+        "scheduled_event",
         "expires_at",
     )
 
@@ -367,6 +374,11 @@ class Invite(Hashable):
         application = data.get("target_application")
         self.target_application: Optional[PartialAppInfo] = (
             PartialAppInfo(data=application, state=state) if application else None
+        )
+
+        scheduled_event = data.get("guild_scheduled_event")
+        self.scheduled_event: Optional[ScheduledEvent] = (
+            ScheduledEvent(data=scheduled_event, state=state) if scheduled_event else None
         )
 
     @classmethod

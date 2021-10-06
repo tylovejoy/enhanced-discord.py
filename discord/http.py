@@ -92,6 +92,7 @@ if TYPE_CHECKING:
         threads,
         voice,
         sticker,
+        scheduled_events
     )
     from .types.snowflake import Snowflake, SnowflakeList
 
@@ -994,6 +995,30 @@ class HTTPClient:
         route = Route("GET", "/channels/{channel_id}/thread-members", channel_id=channel_id)
         return self.request(route)
 
+    # Scheduled events
+
+    _VALID_EVENT_KEYS = ("channel_id", "name", "privacy_level", "scheduled_start_time", "description", "entity_type")
+
+    def create_guild_scheduled_event(self, guild_id: Snowflake, **fields) -> Response[scheduled_events.ScheduledEvent]:
+        payload = {k: v for k, v in fields.items() if k in self._VALID_EVENT_KEYS}
+        return self.request(Route("POST", "/guilds/{guild_id}/events", guild_id=guild_id), json=payload)
+
+    def list_guild_scheduled_events(
+        self, guild_id: Snowflake, with_user_count: bool
+    ) -> Response[List[scheduled_events.ScheduledEvent]]:
+        params = {"with_user_count": int(with_user_count)}
+        return self.request(Route("GET", "/guilds/{guild_id}/events", guild_id=guild_id), params=params)
+
+    def get_guild_scheduled_event(self, event_id: Snowflake) -> Response[scheduled_events.ScheduledEvent]:
+        return self.request(Route("GET", "/guild-events/{event_id}", event_id=event_id))
+
+    def delete_guild_scheduled_event(self, event_id: Snowflake) -> Response[None]:
+        return self.request(Route("DELETE", "/guild-events/{event_id}", event_id=event_id))
+
+    def modify_guild_scheduled_event(self, event_id: Snowflake, **fields: Any) -> Response[None]:
+        payload = {k: v for k, v in fields.items() if k in self._VALID_EVENT_KEYS}
+        return self.request(Route("PATCH", "/guild-events/{event_id}", event_id=event_id), json=payload)
+
     # Webhook management
 
     def create_webhook(
@@ -1424,12 +1449,21 @@ class HTTPClient:
         return self.request(r, reason=reason, json=payload)
 
     def get_invite(
-        self, invite_id: str, *, with_counts: bool = True, with_expiration: bool = True
+        self,
+        invite_id: str,
+        *,
+        with_counts: bool = True,
+        with_expiration: bool = True,
+        guild_scheduled_event_id: Snowflake = None,
     ) -> Response[invite.Invite]:
-        params = {
+        params: Dict[str, Any] = {
             "with_counts": int(with_counts),
             "with_expiration": int(with_expiration),
         }
+
+        if guild_scheduled_event_id is not None:
+            params["guild_scheduled_event_id"] = guild_scheduled_event_id
+
         return self.request(Route("GET", "/invites/{invite_id}", invite_id=invite_id), params=params)
 
     def invites_from(self, guild_id: Snowflake) -> Response[List[invite.Invite]]:

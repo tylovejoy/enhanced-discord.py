@@ -28,11 +28,10 @@ from .channel import PrivacyLevel
 from .snowflake import Snowflake, SnowflakeList
 
 
-
-
 class ScheduledEventMetaData(TypedDict, total=False):
     speaker_ids: SnowflakeList
     location: str
+
 
 class _ScheduledEventOptional(TypedDict, total=False):
     channel_id: Snowflake
@@ -43,6 +42,7 @@ class _ScheduledEventOptional(TypedDict, total=False):
 
 ScheduledEventEntityType = Literal[0, 1, 2, 3]
 ScheduledEventStatus = Literal[1, 2, 3, 4]
+
 
 class ScheduledEvent(_ScheduledEventOptional):
     id: Snowflake

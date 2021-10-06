@@ -1383,7 +1383,12 @@ class Client:
     # Invite management
 
     async def fetch_invite(
-        self, url: Union[Invite, str], *, with_counts: bool = True, with_expiration: bool = True
+        self,
+        url: Union[Invite, str],
+        *,
+        with_counts: bool = True,
+        with_expiration: bool = True,
+        scheduled_event_id: Union[str, int] = None,
     ) -> Invite:
         """|coro|
 
@@ -1423,7 +1428,12 @@ class Client:
         """
 
         invite_id = utils.resolve_invite(url)
-        data = await self.http.get_invite(invite_id, with_counts=with_counts, with_expiration=with_expiration)
+        data = await self.http.get_invite(
+            invite_id,
+            with_counts=with_counts,
+            with_expiration=with_expiration,
+            guild_scheduled_event_id=scheduled_event_id,
+        )
         return Invite.from_incomplete(state=self._connection, data=data)
 
     async def delete_invite(self, invite: Union[Invite, str]) -> None:
