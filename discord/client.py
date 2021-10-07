@@ -1409,8 +1409,11 @@ class Client:
             :attr:`.Invite.approximate_member_count` and :attr:`.Invite.approximate_presence_count`
             fields.
         with_expiration: :class:`bool`
-            Whether to include the expiration date of the invite. This fills the
-            :attr:`.Invite.expires_at` field.
+            Whether to include the expiration date of the invite. This fills the :attr:`.Invite.expires_at` field.
+
+            .. versionadded:: 2.0
+        scheduled_event_id: :class:`int`
+            The event to fetch with the invite. This fills the :attr:`.Invite.scheduled_event` field.
 
             .. versionadded:: 2.0
 

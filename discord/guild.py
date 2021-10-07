@@ -42,6 +42,7 @@ from typing import (
     overload,
 )
 
+
 from . import utils, abc
 from .role import Role
 from .member import Member, VoiceState
@@ -74,6 +75,7 @@ from .flags import SystemChannelFlags
 from .integrations import Integration, _integration_factory
 from .stage_instance import StageInstance
 from .threads import Thread, ThreadMember
+from .scheduled_events import ScheduledEvent
 from .sticker import GuildSticker
 from .file import File
 
@@ -85,9 +87,8 @@ MISSING = utils.MISSING
 if TYPE_CHECKING:
     from .abc import Snowflake, SnowflakeTime
     from .types.guild import Ban as BanPayload, Guild as GuildPayload, MFALevel, GuildFeature
-    from .types.threads import (
-        Thread as ThreadPayload,
-    )
+    from .types.scheduled_events import ScheduledEvent as ScheduledEventPayload
+    from .types.threads import Thread as ThreadPayload
     from .types.voice import GuildVoiceState
     from .permissions import Permissions
     from .channel import VoiceChannel, StageChannel, TextChannel, CategoryChannel, StoreChannel
@@ -276,6 +277,7 @@ class Guild(Hashable):
         "_public_updates_channel_id",
         "_stage_instances",
         "_threads",
+        "_scheduled_events",
     )
 
     _PREMIUM_GUILD_LIMITS: ClassVar[Dict[Optional[int], _GuildLimit]] = {
@@ -291,6 +293,7 @@ class Guild(Hashable):
         self._members: Dict[int, Member] = {}
         self._voice_states: Dict[int, VoiceState] = {}
         self._threads: Dict[int, Thread] = {}
+        self._scheduled_events: Dict[int, ScheduledEvent] = {}
         self._state: ConnectionState = state
         self._from_data(data)
 
@@ -322,6 +325,11 @@ class Guild(Hashable):
 
     def _clear_threads(self) -> None:
         self._threads.clear()
+
+    def _store_scheduled_event(self, payload: ScheduledEventPayload, /) -> ScheduledEvent:
+        scheduled_event = ScheduledEvent(data=payload, state=self._state)
+        self._scheduled_events[scheduled_event.id] = scheduled_event
+        return scheduled_event
 
     def _remove_threads_by_channel(self, channel_id: int) -> None:
         to_remove = [k for k, t in self._threads.items() if t.parent_id == channel_id]
@@ -2608,6 +2616,14 @@ class Guild(Hashable):
             self._roles[role.id] = role
 
         return roles
+
+    async def fetch_scheduled_event(self, event_id: int) -> ScheduledEvent:
+        data = await self._state.http.get_guild_scheduled_event(event_id)
+        return self._store_scheduled_event(data)
+
+    async def fetch_scheduled_events(self, with_user_count: bool = False) -> List[ScheduledEvent]:
+        data = await self._state.http.list_guild_scheduled_events(self.id, with_user_count=with_user_count)
+        return [self._store_scheduled_event(payload) for payload in data]
 
     async def kick(self, user: Snowflake, *, reason: Optional[str] = None) -> None:
         """|coro|
