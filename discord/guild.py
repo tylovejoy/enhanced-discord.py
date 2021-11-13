@@ -331,6 +331,9 @@ class Guild(Hashable):
         self._scheduled_events[scheduled_event.id] = scheduled_event
         return scheduled_event
 
+    def _remove_scheduled_event(self, scheduled_event: Snowflake, /) -> None:
+        self._scheduled_events.pop(scheduled_event.id)
+
     def _remove_threads_by_channel(self, channel_id: int) -> None:
         to_remove = [k for k, t in self._threads.items() if t.parent_id == channel_id]
         for k in to_remove:
@@ -861,6 +864,31 @@ class Guild(Hashable):
             The stage instance or ``None`` if not found.
         """
         return self._stage_instances.get(stage_instance_id)
+
+    @property
+    def scheduled_events(self) -> List[ScheduledEvent]:
+        """List[:class:`ScheduledEvent`]: Returns a :class:`list` of the guild's currently scheduled events.
+
+        .. versionadded:: 2.0
+        """
+        return list(self._scheduled_events.values())
+
+    def get_scheduled_event(self, scheduled_event_id: int, /) -> Optional[ScheduledEvent]:
+        """Returns a scheduled event with the given ID.
+
+        .. versionadded:: 2.0
+
+        Parameters
+        -----------
+        scheduled_event_id: :class:`int`
+            The ID to search for.
+
+        Returns
+        --------
+        Optional[:class:`ScheduledEvent`]
+            The scheduled event or ``None`` if not found.
+        """
+        return self._scheduled_events.get(scheduled_event_id)
 
     @property
     def owner(self) -> Optional[Member]:
@@ -2634,7 +2662,7 @@ class Guild(Hashable):
         return roles
 
     async def fetch_scheduled_event(self, event_id: int) -> ScheduledEvent:
-        data = await self._state.http.get_guild_scheduled_event(event_id)
+        data = await self._state.http.get_guild_scheduled_event(self.id, event_id)
         return self._store_scheduled_event(data)
 
     async def fetch_scheduled_events(self, with_user_count: bool = False) -> List[ScheduledEvent]:

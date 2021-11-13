@@ -25,7 +25,7 @@ DEALINGS IN THE SOFTWARE.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Type, TypeVar, Union
 
 from .enums import ScheduledEventStatus, ScheduledEventEntityType, StagePrivacyLevel, try_enum
 from .utils import parse_time
@@ -37,12 +37,29 @@ if TYPE_CHECKING:
     from .types.scheduled_events import ScheduledEvent as ScheduledEventPayload
 
 
+SE = TypeVar("SE", bound="ScheduledEvent")
+
+
 class ScheduledEvent(Hashable):
     def __init__(self, state: ConnectionState, data: ScheduledEventPayload) -> None:
         self._state = state
         self.id = int(data["id"])
 
         self._update(data)
+
+    @classmethod
+    def _copy(cls: Type[SE], scheduled_event: ScheduledEvent) -> SE:
+        self: SE = cls.__new__(cls)
+
+        self.name = scheduled_event.name
+        self._guild_id = scheduled_event._guild_id
+        self.end_time = scheduled_event.end_time
+        self.start_time = scheduled_event.start_time
+        self.status = scheduled_event.status
+        self.privacy_level = scheduled_event.privacy_level
+        self.location_type = scheduled_event.location_type
+        self._entity_id = scheduled_event._entity_id
+        self._location = scheduled_event._location
 
     def _update(self, data: ScheduledEventPayload):
         self.name = data["name"]
@@ -58,6 +75,8 @@ class ScheduledEvent(Hashable):
         self._entity_id = data.get("entity_id")
         if self.location_type == ScheduledEventEntityType.location:
             self._location = data["entity_metadata"].get("location")
+        else:
+            self._location = None
 
     @property
     def guild(self) -> Optional[Guild]:

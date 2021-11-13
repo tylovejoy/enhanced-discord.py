@@ -121,7 +121,7 @@ class _AuditLogChange_Snowflake(TypedDict):
         "channel_id",
         "inviter_id",
         "guild_id",
-        "sku_ids"
+        "sku_ids",
     ]
     new_value: Snowflake
     old_value: Snowflake

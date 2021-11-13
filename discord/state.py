@@ -35,6 +35,7 @@ import inspect
 
 import os
 
+
 from .guild import Guild
 from .activity import BaseActivity
 from .user import User, ClientUser
@@ -58,6 +59,7 @@ from .ui.view import ViewStore, View
 from .stage_instance import StageInstance
 from .threads import Thread, ThreadMember
 from .sticker import GuildSticker
+from .scheduled_events import ScheduledEvent
 
 if TYPE_CHECKING:
     from .abc import PrivateChannel
@@ -75,6 +77,7 @@ if TYPE_CHECKING:
     from .types.sticker import GuildSticker as GuildStickerPayload
     from .types.guild import Guild as GuildPayload
     from .types.message import Message as MessagePayload
+    from .types.scheduled_events import ScheduledEvent as ScheduledEventPayload
 
     T = TypeVar("T")
     CS = TypeVar("CS", bound="ConnectionState")
@@ -1034,6 +1037,47 @@ class ConnectionState:
         # guild won't be None here
         guild.stickers = tuple(map(lambda d: self.store_sticker(guild, d), data["stickers"]))  # type: ignore
         self.dispatch("guild_stickers_update", guild, before_stickers, guild.stickers)
+
+    def parse_guild_scheduled_event_create(self, data: ScheduledEventPayload) -> None:
+        guild_id = int(data["guild_id"])
+        guild = self._get_guild(guild_id)
+        if guild is None:
+            _log.debug("GUILD_SCHEDULED_EVENT_CREATE referencing an unknown guild ID: %s. Discarding.", guild_id)
+            return
+
+        scheduled_event = guild._store_scheduled_event(data)
+        self.dispatch("guild_scheduled_event_create", guild, scheduled_event)
+
+    def parse_guild_scheduled_event_update(self, data: ScheduledEventPayload) -> None:
+        guild_id = int(data["guild_id"])
+        guild = self._get_guild(guild_id)
+        if guild is None:
+            _log.debug("GUILD_SCHEDULED_EVENT_UPDATE referencing an unknown guild ID: %s. Discarding.", guild_id)
+            return
+
+        scheduled_event = guild.get_scheduled_event(int(data["id"]))
+        if scheduled_event is None:
+            _log.debug("GUILD_SCHEDULED_EVENT_UPDATE referencing an unknown event ID: %s. Discarding.", int(data["id"]))
+            return
+
+        before = ScheduledEvent._copy(scheduled_event)
+        scheduled_event._update(data)
+        self.dispatch("guild_scheduled_event_update", guild, before, scheduled_event)
+
+    def parse_guild_scheduled_event_delete(self, data: ScheduledEventPayload) -> None:
+        guild_id = int(data["guild_id"])
+        guild = self._get_guild(guild_id)
+        if guild is None:
+            _log.debug("GUILD_SCHEDULED_EVENT_DELETE referencing an unknown guild ID: %s. Discarding.", guild_id)
+            return
+
+        scheduled_event = guild.get_scheduled_event(int(data["id"]))
+        if scheduled_event is None:
+            _log.debug("GUILD_SCHEDULED_EVENT_DELETE referencing an unknown event ID: %s. Discarding.", int(data["id"]))
+            return
+
+        guild._remove_scheduled_event(scheduled_event)
+        self.dispatch("guild_scheduled_event_delete", guild, scheduled_event)
 
     def _get_create_guild(self, data):
         if data.get("unavailable") is False:
