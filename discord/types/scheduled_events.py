@@ -24,12 +24,12 @@ DEALINGS IN THE SOFTWARE.
 
 from typing import List, Literal, Optional, TypedDict
 
+from .user import User
 from .channel import PrivacyLevel
 from .snowflake import Snowflake, SnowflakeList
 
 
 class ScheduledEventMetaData(TypedDict, total=False):
-    speaker_ids: SnowflakeList
     location: str
 
 
@@ -37,16 +37,18 @@ class _ScheduledEventOptional(TypedDict, total=False):
     channel_id: Snowflake
     description: str
     image: str
+    creator: User
     user_count: int
 
 
-ScheduledEventEntityType = Literal[0, 1, 2, 3]
+ScheduledEventEntityType = Literal[1, 2, 3]
 ScheduledEventStatus = Literal[1, 2, 3, 4]
 
 
 class ScheduledEvent(_ScheduledEventOptional):
     id: Snowflake
     guild_id: Snowflake
+    creator_id: Optional[int]
     name: str
     scheduled_start_time: str
     scheduled_end_time: Optional[str]
@@ -54,6 +56,4 @@ class ScheduledEvent(_ScheduledEventOptional):
     status: ScheduledEventStatus
     entity_type: ScheduledEventEntityType
     entity_id: Optional[Snowflake]
-    entity_metadata: ScheduledEventMetaData
-    sku_ids: SnowflakeList
-    skus: List
+    entity_metadata: Optional[ScheduledEventMetaData]

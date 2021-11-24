@@ -293,7 +293,6 @@ class Guild(Hashable):
         self._members: Dict[int, Member] = {}
         self._voice_states: Dict[int, VoiceState] = {}
         self._threads: Dict[int, Thread] = {}
-        self._scheduled_events: Dict[int, ScheduledEvent] = {}
         self._state: ConnectionState = state
         self._from_data(data)
 
@@ -325,14 +324,6 @@ class Guild(Hashable):
 
     def _clear_threads(self) -> None:
         self._threads.clear()
-
-    def _store_scheduled_event(self, payload: ScheduledEventPayload, /) -> ScheduledEvent:
-        scheduled_event = ScheduledEvent(data=payload, state=self._state)
-        self._scheduled_events[scheduled_event.id] = scheduled_event
-        return scheduled_event
-
-    def _remove_scheduled_event(self, scheduled_event: Snowflake, /) -> None:
-        self._scheduled_events.pop(scheduled_event.id)
 
     def _remove_threads_by_channel(self, channel_id: int) -> None:
         to_remove = [k for k, t in self._threads.items() if t.parent_id == channel_id]
@@ -461,6 +452,11 @@ class Guild(Hashable):
         for s in guild.get("stage_instances", []):
             stage_instance = StageInstance(guild=self, data=s, state=state)
             self._stage_instances[stage_instance.id] = stage_instance
+
+        self._scheduled_events: Dict[int, ScheduledEvent] = {}
+        for s in guild.get("guild_scheduled_events", []):
+            scheduled_event = ScheduledEvent(data=s, state=state)
+            self._scheduled_events[scheduled_event.id] = scheduled_event
 
         cache_joined = self._state.member_cache_flags.joined
         self_id = self._state.self_id
@@ -2663,11 +2659,11 @@ class Guild(Hashable):
 
     async def fetch_scheduled_event(self, event_id: int) -> ScheduledEvent:
         data = await self._state.http.get_guild_scheduled_event(self.id, event_id)
-        return self._store_scheduled_event(data)
+        return ScheduledEvent(self._state, data)
 
     async def fetch_scheduled_events(self, with_user_count: bool = False) -> List[ScheduledEvent]:
         data = await self._state.http.list_guild_scheduled_events(self.id, with_user_count=with_user_count)
-        return [self._store_scheduled_event(payload) for payload in data]
+        return [ScheduledEvent(self._state, payload) for payload in data]
 
     async def kick(self, user: Snowflake, *, reason: Optional[str] = None) -> None:
         """|coro|

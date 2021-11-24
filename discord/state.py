@@ -1045,7 +1045,8 @@ class ConnectionState:
             _log.debug("GUILD_SCHEDULED_EVENT_CREATE referencing an unknown guild ID: %s. Discarding.", guild_id)
             return
 
-        scheduled_event = guild._store_scheduled_event(data)
+        scheduled_event = ScheduledEvent(self, data)
+        guild._scheduled_events[scheduled_event.id] = scheduled_event
         self.dispatch("guild_scheduled_event_create", guild, scheduled_event)
 
     def parse_guild_scheduled_event_update(self, data: ScheduledEventPayload) -> None:
@@ -1076,7 +1077,7 @@ class ConnectionState:
             _log.debug("GUILD_SCHEDULED_EVENT_DELETE referencing an unknown event ID: %s. Discarding.", int(data["id"]))
             return
 
-        guild._remove_scheduled_event(scheduled_event)
+        guild._scheduled_events.pop(scheduled_event.id)
         self.dispatch("guild_scheduled_event_delete", guild, scheduled_event)
 
     def _get_create_guild(self, data):

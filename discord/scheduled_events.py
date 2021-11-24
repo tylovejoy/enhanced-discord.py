@@ -47,6 +47,7 @@ class ScheduledEvent(Hashable):
 
         self._update(data)
 
+
     @classmethod
     def _copy(cls: Type[SE], scheduled_event: ScheduledEvent) -> SE:
         self: SE = cls.__new__(cls)
@@ -61,6 +62,8 @@ class ScheduledEvent(Hashable):
         self._entity_id = scheduled_event._entity_id
         self._location = scheduled_event._location
 
+        return self
+
     def _update(self, data: ScheduledEventPayload):
         self.name = data["name"]
         self._guild_id = data["guild_id"]
@@ -73,10 +76,11 @@ class ScheduledEvent(Hashable):
         self.location_type = try_enum(ScheduledEventEntityType, data["entity_type"])
 
         self._entity_id = data.get("entity_id")
-        if self.location_type == ScheduledEventEntityType.location:
-            self._location = data["entity_metadata"].get("location")
+        if self.location_type == ScheduledEventEntityType.external:
+            self._location = (data.get("entity_metadata") or {}).get("location")
         else:
             self._location = None
+
 
     @property
     def guild(self) -> Optional[Guild]:
@@ -87,7 +91,7 @@ class ScheduledEvent(Hashable):
         """Optional[Union[:class:`str`, :class:`VoiceChannel`, :class:`StageChannel`]
         The location of the Scheduled Event, depends on :attr:`location_type`.
         """
-        if self.location_type == ScheduledEventEntityType.location:
+        if self.location_type == ScheduledEventEntityType.external:
             return self._location
 
         if self._entity_id is not None:
