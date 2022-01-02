@@ -303,7 +303,7 @@ class Attachment(Hashable):
         return data
 
     async def to_file(
-        self, *, use_cached: bool = False, spoiler: bool = False, descrption: Optional[str] = None
+        self, *, use_cached: bool = False, spoiler: bool = False, description: Optional[str] = None
     ) -> File:
         """|coro|
 
@@ -349,7 +349,7 @@ class Attachment(Hashable):
         """
 
         data = await self.read(use_cached=use_cached)
-        return File(io.BytesIO(data), filename=self.filename, spoiler=spoiler, description=descrption)
+        return File(io.BytesIO(data), filename=self.filename, spoiler=spoiler, description=description)
 
     def to_dict(self) -> AttachmentPayload:
         result: AttachmentPayload = {
