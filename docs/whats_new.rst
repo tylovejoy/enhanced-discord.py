@@ -69,7 +69,7 @@ New Features
 - |commands| Add :meth:`Bot.populate_owners <.ext.commands.Bot.populate_owners>`
 - Add support for slash command in ext.commands
     - |commands| Add :meth:`Bot.process_slash_commands <.ext.commands.Bot.process_slash_commands>`
-    - |commands| Add :meth:`Context.author_permissions <.ext.commands.Context.author_permissions`
+    - |commands| Add :meth:`Context.author_permissions <.ext.commands.Context.author_permissions>`
     - |commands| Add ephemeral kwarg to :meth:`Context.send <.ext.commands.Context.send>` for slash commands only
     - |commands| Add :meth:`Context.defer <.ext.commands.Context.defer>`
     - Add :class:`~ext.commands.Option`
