@@ -299,7 +299,7 @@ class BotBase(GroupMixin):
             if guilds is None:
                 commands[None].append(payload)
             else:
-                self._application_command_store.add_command(payload, self.process_slash_commands, guilds)  # type: ignore
+                self._application_command_store.add_command(payload, BotBase.process_slash_commands, guild_ids=guilds)  # type: ignore
                 for guild in guilds:
                     commands[guild].append(payload)
 
@@ -307,10 +307,13 @@ class BotBase(GroupMixin):
         if global_commands is not None:
             if self.slash_command_guilds is None:
                 for global_command in global_commands:
-                    self._application_command_store.add_command(global_command, self.process_slash_commands, None)  # type: ignore
+                    self._application_command_store.add_command(global_command, BotBase.process_slash_commands, guild_ids=None)  # type: ignore
             else:
                 for global_command in global_commands:
-                    self._application_command_store.add_command(global_command, self.process_slash_commands, self.slash_command_guilds)  # type: ignore
+                    self._application_command_store.add_command(global_command, BotBase.process_slash_commands, guild_ids=self.slash_command_guilds)  # type: ignore
+        
+        await self.upload_guild_application_commands()  # type: ignore
+        await self.upload_global_application_commands()  # type: ignore
 
     @discord.utils.copy_doc(discord.Client.close)
     async def close(self) -> None:
@@ -1320,9 +1323,6 @@ class BotBase(GroupMixin):
 
     async def on_message(self, message):
         await self.process_commands(message)
-
-    async def on_interaction(self, interaction: discord.Interaction):
-        await discord.Client.on_interaction(self, interaction)  # type: ignore
 
 
 class Bot(BotBase, discord.Client):
