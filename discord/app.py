@@ -48,6 +48,11 @@ __all__ = ("AutoCompleteResponse", "Command", "UserCommand", "MessageCommand", "
 CommandT = TypeVar("CommandT", bound="Command")
 NoneType = type(None)
 
+if TYPE_CHECKING:
+    optionbase = Any
+else:
+    optionbase = object
+
 application_option_type__lookup = {
     str: 3,
     int: 4,
@@ -159,7 +164,7 @@ class AutoCompleteResponse(dict):  # TODO: docs
         return iter([{"name": k, "value": v} for k, v in self.items()])
 
 
-class Option:
+class Option(optionbase):
     __slots__ = ("autocomplete", "default", "description", "max", "min")
 
     def __init__(
