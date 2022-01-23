@@ -20,6 +20,7 @@ from typing import (
     Coroutine,
     Callable,
 )
+from functools import partial
 
 from .utils import MISSING, maybe_coroutine, evaluate_annotation
 from .enums import ApplicationCommandType, InteractionType
@@ -510,8 +511,8 @@ class CommandState:
                 self.pre_registration[guild_id].append((command, callback))
 
     def _internal_add(self, cls: Type[Command]) -> None:
-        async def callback(client: Client, interaction: Interaction, _) -> None:
-            nonlocal cls
+        async def callback(cls: Type[Command], client: Client, interaction: Interaction, _) -> None:
+            
             cls._id_ = int(interaction.data["id"])
             options = interaction.data.get("options")
 
@@ -540,7 +541,7 @@ class CommandState:
                     client.dispatch("application_command_error", interaction, e)  # TODO: document this one
                     await maybe_coroutine(inst.error, e)
 
-        self.add_command(cls.to_dict(), callback, guild_ids=cls._guilds_ or None)
+        self.add_command(cls.to_dict(), partial(callback, cls), guild_ids=cls._guilds_ or None)
 
     async def dispatch(self, client: Client, interaction: Interaction) -> None:
         print(json.dumps(interaction.data, indent=4))
