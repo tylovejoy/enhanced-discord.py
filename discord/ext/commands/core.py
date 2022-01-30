@@ -1326,7 +1326,7 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
         elif nested == 3:
             raise ApplicationCommandRegistrationError(self, f"{self.qualified_name} is too deeply nested!")
 
-        payload = {"name": self.name, "description": self.short_doc or "no description", "options": []}
+        payload = {"name": self.name, "description": self.short_doc or "no description", "options": [], "type": 1}
         if nested != 0:
             payload["type"] = 1
 
