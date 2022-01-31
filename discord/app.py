@@ -105,9 +105,9 @@ def _option_to_dict(option: _OptionData) -> dict:
         if option.min and option.max and option.min > option.max:
             raise ValueError(f"{option} has a min value that is greater than the max value")
 
-        if option.min:
+        if option.min is not MISSING:
             payload["min_value"] = option.min
-        if option.max:
+        if option.max is not MISSING:
             payload["max_value"] = option.max
 
     if origin is not Literal:
