@@ -546,7 +546,7 @@ class CommandState:
                     client.dispatch("application_command_error", interaction, e)  # TODO: document this one
                     await maybe_coroutine(inst.error, e)
 
-        self.add_command(cls.to_dict(), partial(callback, cls), guild_ids=cls._guilds_ or None)
+        self.add_command(cls.to_dict(), callback, guild_ids=cls._guilds_ or None)
 
     async def dispatch(self, client: Client, interaction: Interaction) -> None:
         print(json.dumps(interaction.data, indent=4))
