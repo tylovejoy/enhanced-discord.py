@@ -511,18 +511,18 @@ class CommandState:
 
     def _internal_add(self, cls: Type[Command]) -> None:
         async def callback(client: Client, interaction: Interaction, _) -> None:
-            nonlocal cls
-            cls._id_ = int(interaction.data["id"])
+            _cls = cls
+            _cls._id_ = int(interaction.data["id"])
             options = interaction.data.get("options")
 
             # first check if we're dealing with a subcommand
-            if cls._type_ is ApplicationCommandType.slash_command:
+            if _cls._type_ is ApplicationCommandType.slash_command:
                 while options and options[0]["type"] in {1, 2}:
                     name = options[0]["name"]
                     options = options[0]["options"]
-                    cls = cls._children_[name]
+                    _cls = _cls._children_[name]
 
-            inst = cls()
+            inst = _cls()
             inst.client = client
             inst.interaction = interaction
 
