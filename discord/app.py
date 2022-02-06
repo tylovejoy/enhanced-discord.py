@@ -20,6 +20,7 @@ from typing import (
     Coroutine,
     Callable,
 )
+from functools import partial
 
 from .utils import MISSING, maybe_coroutine, evaluate_annotation
 from .enums import ApplicationCommandType, InteractionType
@@ -47,6 +48,11 @@ __all__ = ("AutoCompleteResponse", "Command", "UserCommand", "MessageCommand", "
 
 CommandT = TypeVar("CommandT", bound="Command")
 NoneType = type(None)
+
+if TYPE_CHECKING:
+    optionbase = Any
+else:
+    optionbase = object
 
 application_option_type__lookup = {
     str: 3,
@@ -159,7 +165,7 @@ class AutoCompleteResponse(dict):  # TODO: docs
         return iter([{"name": k, "value": v} for k, v in self.items()])
 
 
-class Option:
+class Option(optionbase):
     __slots__ = ("autocomplete", "default", "description", "max", "min")
 
     def __init__(
@@ -540,7 +546,7 @@ class CommandState:
                     client.dispatch("application_command_error", interaction, e)  # TODO: document this one
                     await maybe_coroutine(inst.error, e)
 
-        self.add_command(cls.to_dict(), callback, guild_ids=cls._guilds_ or None)
+        self.add_command(cls.to_dict(), partial(callback, cls), guild_ids=cls._guilds_ or None)
 
     async def dispatch(self, client: Client, interaction: Interaction) -> None:
         print(json.dumps(interaction.data, indent=4))
