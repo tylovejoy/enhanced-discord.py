@@ -93,6 +93,14 @@ class Interaction:
         The user or member that sent the interaction.
     message: Optional[:class:`Message`]
         The message that sent this interaction.
+    locale: Optional[:class:`str`]
+        The selected language of the user that invoked
+        this interaction. This is only ``None`` when the 
+        interaction is ``InteractionType.ping``.
+    guild_locale: Optional[:class:`str`]
+        The selected language of the guild that this
+        interaction was sent from. This is set in
+        community settings.
     token: :class:`str`
         The token to continue the interaction. These are valid
         for 15 minutes.
@@ -109,6 +117,8 @@ class Interaction:
         "application_id",
         "message",
         "user",
+        "locale",
+        "guild_locale",
         "token",
         "version",
         "_permissions",
@@ -135,6 +145,8 @@ class Interaction:
         self.channel_id: Optional[int] = utils._get_as_snowflake(data, "channel_id")
         self.guild_id: Optional[int] = utils._get_as_snowflake(data, "guild_id")
         self.application_id: int = int(data["application_id"])
+        self.locale: Optional[str] = data.get("locale")
+        self.guild_locale: Optional[str] = data.get("guild_locale")
 
         self.message: Optional[Message]
         try:
