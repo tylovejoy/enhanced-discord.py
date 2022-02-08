@@ -20,9 +20,7 @@ from typing import (
     Coroutine,
     Callable,
 )
-from functools import partial
-
-from .utils import MISSING, maybe_coroutine, evaluate_annotation
+from .utils import MISSING, maybe_coroutine, evaluate_annotation, find
 from .enums import ApplicationCommandType, InteractionType
 from .interactions import Interaction
 from .member import Member
@@ -514,6 +512,50 @@ class CommandState:
                     self.pre_registration[guild_id] = []
 
                 self.pre_registration[guild_id].append((command, callback))
+
+    def remove_command(
+        self,
+        name: str,
+        type: ApplicationCommandType
+    ) -> None:
+        """
+        Removes the given command from both global commands and all guild commands.
+
+        Parameters
+        ------------
+        name: :class:`str`
+            The name of the command to remove
+        type: :class:`ApplicationCommandType`
+            The type of command to remove. One of :class:`ApplicationCommandType.slash_command`, :class:`ApplicationCommandType.user_command,
+            or :class:`ApplicationCommandType.message_command`
+
+        Raises
+        -------
+        ApplicationCommandNotFound: the command wasn't found
+        """
+        def finder(cmd: Tuple[Union[UploadableApplicationCommand, UploadableSlashCommand], _callback]) -> bool:
+            if cmd[0]['name'] == name and cmd[0]['type'] == type.value:
+                return True
+
+            return False
+
+        did_find = False
+
+        for commands in self.pre_registration.values():
+            found = find(finder, commands)
+            print(commands)
+            if found:
+                did_find = True
+                commands.remove(found)
+
+            print(did_find, commands)
+
+        print(self.pre_registration)
+        print(self.command_store)
+
+        if not did_find:
+            raise RuntimeError(f"ApplicationCommand '{name}' of type {type.name} not found")
+
 
     def _internal_add(self, cls: Type[Command]) -> None:
         async def callback(client: Client, interaction: Interaction, _) -> None:
