@@ -536,14 +536,12 @@ class CommandState:
                 try:
                     await self._dispatch_autocomplete(inst, options)
                 except Exception as e:
-                    client.dispatch("application_command_error", interaction, e)  # TODO: document this one
                     await maybe_coroutine(inst.error, e)
 
             else:
                 try:
                     await self._internal_dispatch(inst, options)
                 except Exception as e:
-                    client.dispatch("application_command_error", interaction, e)  # TODO: document this one
                     await maybe_coroutine(inst.error, e)
 
         self.add_command(cls.to_dict(), callback, guild_ids=cls._guilds_ or None)
