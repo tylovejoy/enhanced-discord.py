@@ -547,7 +547,6 @@ class CommandState:
         self.add_command(cls.to_dict(), callback, guild_ids=cls._guilds_ or None)
 
     async def dispatch(self, client: Client, interaction: Interaction) -> None:
-        print(json.dumps(interaction.data, indent=4))
         command, callback = self.command_store.get(int(interaction.data["id"]), (None, None))
         if command is None:
             return
@@ -568,7 +567,6 @@ class CommandState:
     async def _dispatch_autocomplete(self, inst: CommandT, data: List[ApplicationCommandInteractionDataOption]):
         options: Dict[str, Optional[Union[str, int, float]]] = {x.name: None for x in inst._arguments_}
         focused = None
-        print(data)
 
         for x in data:
             val = x["value"]
