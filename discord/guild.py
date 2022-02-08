@@ -3010,6 +3010,9 @@ class Guild(Hashable):
 
             if user_ids is None:
                 raise ValueError("Must pass either query or user_ids")
+                
+        elif not isinstance(query, str):
+            raise InvalidArgument("query parameter expects a string.")
 
         if user_ids is not None and query is not None:
             raise ValueError("Cannot pass both query and user_ids")
