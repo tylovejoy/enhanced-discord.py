@@ -146,7 +146,7 @@ def _parse_role(
 
 def _parse_attachment(
     interaction: Interaction, state: ConnectionState, argument: ApplicationCommandInteractionDataOption
-) -> Role:
+) -> Attachment:
     target = argument["value"]
     resolved = interaction.data["resolved"]["attachments"][target]
 
