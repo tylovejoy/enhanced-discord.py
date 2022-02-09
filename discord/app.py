@@ -24,7 +24,7 @@ from .utils import MISSING, maybe_coroutine, evaluate_annotation, find
 from .enums import ApplicationCommandType, InteractionType
 from .interactions import Interaction
 from .member import Member
-from .message import Message
+from .message import Attachment, Message
 from .user import User
 from .channel import PartialSlashChannel
 from .role import Role
@@ -61,6 +61,7 @@ application_option_type__lookup = {
     PartialSlashChannel: 7,
     Role: 8,
     float: 10,
+    Attachment: 11,
 }
 
 
@@ -143,8 +144,15 @@ def _parse_role(
 
     return Role(guild=interaction.guild, state=state, data=resolved)  # type: ignore
 
+def _parse_attachment(
+    interaction: Interaction, state: ConnectionState, argument: ApplicationCommandInteractionDataOption
+) -> Role:
+    target = argument["value"]
+    resolved = interaction.data["resolved"]["attachments"][target]
 
-_parse_index = {6: _parse_user, 7: _parse_channel, 8: _parse_role}
+    return Attachment(state=state, data=resolved)  # type: ignore
+
+_parse_index = {6: _parse_user, 7: _parse_channel, 8: _parse_role, 11: _parse_attachment}
 
 T = TypeVar("T")
 AutoCompleteResponseT = TypeVar("AutoCompleteResponseT", bound="AutoCompleteResponse")
