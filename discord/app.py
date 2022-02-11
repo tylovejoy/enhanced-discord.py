@@ -224,7 +224,7 @@ class CommandMeta(type):
         *,
         name: str = MISSING,
         description: str = MISSING,
-        parent: Command = MISSING,
+        parent: Type[Command] = MISSING,
         guilds: List[Snowflake] = MISSING,
     ):
         attrs["_arguments_"] = arguments = []  # type: List[_OptionData]
