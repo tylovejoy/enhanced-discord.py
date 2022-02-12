@@ -56,7 +56,7 @@ __all__ = (
     "ArgumentMismatchError",
     "AutoCompleteResponseFormattingError",
     "ApplicationCommandCheckFailure",
-    "ApplicationCommandNotFound"
+    "ApplicationCommandNotFound",
 )
 
 
@@ -310,6 +310,7 @@ class AutoCompleteResponseFormattingError(DiscordException):
 
     pass
 
+
 class ApplicationCommandCheckFailure(DiscordException):
     """Exception that's raised when the check or pre_check functions do not return a ``True`` value
 
@@ -318,6 +319,7 @@ class ApplicationCommandCheckFailure(DiscordException):
     """
 
     pass
+
 
 class ApplicationCommandNotFound(DiscordException):
     """Exception that's raised when the given command is not found

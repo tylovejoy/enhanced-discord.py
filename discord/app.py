@@ -26,7 +26,13 @@ from .message import Attachment, Message
 from .user import User
 from .channel import PartialSlashChannel
 from .role import Role
-from .errors import MinMaxTypeError, ArgumentMismatchError, AutoCompleteResponseFormattingError, ApplicationCommandCheckFailure, ApplicationCommandNotFound
+from .errors import (
+    MinMaxTypeError,
+    ArgumentMismatchError,
+    AutoCompleteResponseFormattingError,
+    ApplicationCommandCheckFailure,
+    ApplicationCommandNotFound,
+)
 
 if TYPE_CHECKING:
     from .client import Client
@@ -143,6 +149,7 @@ def _parse_role(
 
     return Role(guild=interaction.guild, state=state, data=resolved)  # type: ignore
 
+
 def _parse_attachment(
     interaction: Interaction, state: ConnectionState, argument: ApplicationCommandInteractionDataOption
 ) -> Attachment:
@@ -150,6 +157,7 @@ def _parse_attachment(
     resolved = interaction.data["resolved"]["attachments"][target]
 
     return Attachment(state=state, data=resolved)  # type: ignore
+
 
 _parse_index = {6: _parse_user, 7: _parse_channel, 8: _parse_role, 11: _parse_attachment}
 
@@ -335,7 +343,7 @@ class Command(metaclass=CommandMeta):
                 "name": cls._name_,
                 "description": cls._description_ or "no description",
                 "options": [x.to_dict() for x in cls._children_.values()],
-                "type":1,
+                "type": 1,
             }
 
             if cls._parent_:
@@ -430,7 +438,7 @@ class Command(metaclass=CommandMeta):
                 view=view,
                 tts=tts,
                 ephemeral=ephemeral,
-                delete_after=delete_after
+                delete_after=delete_after,
             )
         else:
             return await self.interaction.followup.send(
@@ -440,10 +448,10 @@ class Command(metaclass=CommandMeta):
                 view=view,
                 tts=tts,
                 ephemeral=ephemeral,
-                delete_after=delete_after
+                delete_after=delete_after,
             )
 
-    async def defer(self, *, ephemeral: bool=False) -> None:
+    async def defer(self, *, ephemeral: bool = False) -> None:
         """|coro|
 
         Defers the interaction response.
@@ -610,11 +618,7 @@ class CommandState:
 
                 self.pre_registration[guild_id].append((command, callback))
 
-    def remove_command(
-        self,
-        name: str,
-        type: ApplicationCommandType
-    ) -> None:
+    def remove_command(self, name: str, type: ApplicationCommandType) -> None:
         """
         Removes the given command from both global commands and all guild commands.
 
@@ -630,8 +634,9 @@ class CommandState:
         -------
         ApplicationCommandNotFound: the command wasn't found
         """
+
         def finder(cmd: Tuple[Union[UploadableApplicationCommand, UploadableSlashCommand], _callback]) -> bool:
-            if cmd[0]['name'] == name and cmd[0]['type'] == type.value:
+            if cmd[0]["name"] == name and cmd[0]["type"] == type.value:
                 return True
 
             return False
@@ -646,7 +651,6 @@ class CommandState:
 
         if not did_find:
             raise ApplicationCommandNotFound(f"ApplicationCommand '{name}' of type {type.name} not found")
-
 
     def _internal_add(self, cls: Type[Command]) -> None:
         async def callback(client: Client, interaction: Interaction, _) -> None:
@@ -717,6 +721,8 @@ class CommandState:
         try:
             resp = list(resp)
         except Exception as e:
-            raise AutoCompleteResponseFormattingError(f"Could not format the returned autocomplete object properly.") from e
+            raise AutoCompleteResponseFormattingError(
+                f"Could not format the returned autocomplete object properly."
+            ) from e
 
         await inst.interaction.response.autocomplete_result(resp)
