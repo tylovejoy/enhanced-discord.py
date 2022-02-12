@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import inspect
 import sys
-import json
 import traceback
 from typing import (
     List,
@@ -15,7 +14,6 @@ from typing import (
     Type,
     Literal,
     Tuple,
-    Iterable,
     Generic,
     Coroutine,
     Callable,
@@ -28,6 +26,7 @@ from .message import Attachment, Message
 from .user import User
 from .channel import PartialSlashChannel
 from .role import Role
+from .errors import MinMaxTypeError, ArgumentMismatchError, AutoCompleteResponseFormattingError, ApplicationCommandCheckFailure, ApplicationCommandNotFound
 
 if TYPE_CHECKING:
     from .client import Client
@@ -97,9 +96,7 @@ def _option_to_dict(option: _OptionData) -> dict:
 
     if option.min is not MISSING or option.max is not MISSING:
         if arg not in {int, float}:
-            raise ValueError(
-                f"min or max specified for argument {option.name}, but is not an int or float."
-            )  # TODO: exceptions
+            raise MinMaxTypeError(option.name, arg)
 
         if option.min and option.max and option.min > option.max:
             raise ValueError(f"{option} has a min value that is greater than the max value")
@@ -274,9 +271,9 @@ class CommandMeta(type):
             arguments.append(_OptionData(k, v, autocomplete, description, default, min_, max_))
 
         if type is ApplicationCommandType.user_command and (len(arguments) != 1 or arguments[0].name != "target"):
-            raise RuntimeError("User Commands must take exactly one argument, named 'target'")  # TODO: exceptions
+            raise ArgumentMismatchError("User Commands must take exactly one argument, named 'target'")
         elif type is ApplicationCommandType.message_command and (len(arguments) != 1 or arguments[0].name != "message"):
-            raise RuntimeError("Message Commands must take exactly one argument, named 'message'")  # TODO: exceptions
+            raise ArgumentMismatchError("Message Commands must take exactly one argument, named 'message'")
 
         t = super().__new__(mcs, classname, bases, attrs)
 
@@ -552,18 +549,12 @@ class CommandState:
 
         for commands in self.pre_registration.values():
             found = find(finder, commands)
-            print(commands)
             if found:
                 did_find = True
                 commands.remove(found)
 
-            print(did_find, commands)
-
-        print(self.pre_registration)
-        print(self.command_store)
-
         if not did_find:
-            raise RuntimeError(f"ApplicationCommand '{name}' of type {type.name} not found")
+            raise ApplicationCommandNotFound(f"ApplicationCommand '{name}' of type {type.name} not found")
 
 
     def _internal_add(self, cls: Type[Command]) -> None:
@@ -606,12 +597,12 @@ class CommandState:
 
     async def _internal_dispatch(self, inst: CommandT, options: List[ApplicationCommandInteractionDataOption]):
         if not await maybe_coroutine(inst.pre_check):
-            raise RuntimeError(f"The pre-check for {inst._name_} failed.")
+            raise ApplicationCommandCheckFailure(f"The pre-check for {inst._name_} failed.")
 
         inst._handle_arguments(inst.interaction, self.state, options or [], inst._arguments_)
 
         if not await maybe_coroutine(inst.check):
-            raise RuntimeError(f"The check for {inst._name_} failed.")
+            raise ApplicationCommandCheckFailure(f"The check for {inst._name_} failed.")
 
         await inst.callback()
 
@@ -635,6 +626,6 @@ class CommandState:
         try:
             resp = list(resp)
         except Exception as e:
-            raise ValueError(f"Could not format the returned autocomplete object properly.") from e  # TODO: exceptions
+            raise AutoCompleteResponseFormattingError(f"Could not format the returned autocomplete object properly.") from e
 
         await inst.interaction.response.autocomplete_result(resp)
