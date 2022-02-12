@@ -32,6 +32,8 @@ if TYPE_CHECKING:
     from .client import Client
     from .state import ConnectionState
     from .http import HTTPClient
+    from .embeds import Embed
+    from .ui.view import View
     from .types.snowflake import Snowflake
     from .types.interactions import (
         ApplicationCommand,
@@ -374,6 +376,72 @@ class Command(metaclass=CommandMeta):
 
     async def error(self, exception: Exception) -> None:
         traceback.print_exception(type(exception), exception, exception.__traceback__)
+
+    async def send(
+        self,
+        content: Optional[Any] = None,
+        *,
+        embed: Embed = MISSING,
+        embeds: List[Embed] = MISSING,
+        view: View = MISSING,
+        tts: bool = False,
+        ephemeral: bool = False,
+        delete_after: float = MISSING,
+    ) -> None:
+        """|coro|
+
+        Responds to this interaction by sending a message.
+
+        Parameters
+        -----------
+        content: Optional[:class:`str`]
+            The content of the message to send.
+        embeds: List[:class:`Embed`]
+            A list of embeds to send with the content. Maximum of 10. This cannot
+            be mixed with the ``embed`` parameter.
+        embed: :class:`Embed`
+            The rich embed for the content to send. This cannot be mixed with
+            ``embeds`` parameter.
+        tts: :class:`bool`
+            Indicates if the message should be sent using text-to-speech.
+        view: :class:`discord.ui.View`
+            The view to send with the message.
+        ephemeral: :class:`bool`
+            Indicates if the message should only be visible to the user who started the interaction.
+            If a view is sent with an ephemeral message and it has no timeout set then the timeout
+            is set to 15 minutes.
+        delete_after: :class:`float`
+            If specified, the message will automatically delete after the set amount of time (in seconds)
+
+        Raises
+        -------
+        HTTPException
+            Sending the message failed.
+        TypeError
+            You specified both ``embed`` and ``embeds``.
+        ValueError
+            The length of ``embeds`` was invalid.
+        """
+        if not self.interaction.response.is_done():
+            return await self.interaction.response.send_message(
+                content=content,
+                embed=embed,
+                embeds=embeds,
+                view=view,
+                tts=tts,
+                ephemeral=ephemeral,
+                delete_after=delete_after
+            )
+        else:
+            return await self.interaction.followup.send(
+                content=content,
+                embed=embed,
+                embeds=embeds,
+                view=view,
+                tts=tts,
+                ephemeral=ephemeral,
+                delete_after=delete_after
+            )
 
 
 class UserCommand(Command, Generic[CommandT]):
