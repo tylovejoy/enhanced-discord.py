@@ -443,6 +443,29 @@ class Command(metaclass=CommandMeta):
                 delete_after=delete_after
             )
 
+    async def defer(self, *, ephemeral: bool=False) -> None:
+        """|coro|
+
+        Defers the interaction response.
+
+        This is typically used when the interaction is acknowledged
+        and a secondary action will be done later.
+        If the interaction has already been responded to, this function will silently fail.
+
+        Parameters
+        -----------
+        ephemeral: :class:`bool`
+            Indicates whether the deferred message will eventually be ephemeral.
+            This only applies for interactions of type :attr:`InteractionType.application_command`.
+
+        Raises
+        -------
+        HTTPException
+            Deferring the interaction failed.
+        """
+        if not self.interaction.response.is_done():
+            await self.interaction.response.defer(ephemeral=ephemeral)
+
 
 class UserCommand(Command, Generic[CommandT]):
     _type_ = ApplicationCommandType.user_command
