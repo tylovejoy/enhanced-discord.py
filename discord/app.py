@@ -81,7 +81,7 @@ def _option_to_dict(option: _OptionData) -> dict:
     payload = {
         "name": option.name,
         "description": option.description or "none provided",
-        "required": option.default is not MISSING,
+        "required": option.default is MISSING,
         "autocomplete": option.autocomplete,
     }
 
@@ -269,8 +269,6 @@ class CommandMeta(type):
         for k, attr in attrs.items():
             if k.startswith("_") or type(attr) in {FunctionType, classmethod, staticmethod}:
                 continue
-
-            print(k, attr, type(attr))
 
             v = ann.get(k, "str")
             default = description = min_ = max_ = MISSING
