@@ -57,6 +57,7 @@ __all__ = (
     "ApplicationCommandType",
     "NSFWLevel",
     "ProtocolURL",
+    "TextInputStyle",
 )
 
 
@@ -532,6 +533,7 @@ class InteractionType(Enum):
     application_command = 2
     component = 3
     application_command_autocomplete = 4
+    modal_submit = 5
 
 
 class ApplicationCommandType(Enum):
@@ -549,6 +551,7 @@ class InteractionResponseType(Enum):
     deferred_message_update = 6  # for components
     message_update = 7  # for components
     application_command_autocomplete_result = 8
+    modal = 9  # forms
 
 
 class VideoQualityMode(Enum):
@@ -563,6 +566,7 @@ class ComponentType(Enum):
     action_row = 1
     button = 2
     select = 3
+    input_text = 4
 
     def __int__(self):
         return self.value
@@ -666,6 +670,15 @@ class ProtocolURL(Enum):
 
     def format(self, **kwargs: Any) -> str:
         return self.value.format(**kwargs)
+
+
+class TextInputStyle(Enum):
+
+    short = 1
+    long = 2
+
+    # Aliases
+    paragraph = 2
 
 
 T = TypeVar("T")
