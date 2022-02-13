@@ -3,6 +3,8 @@ from __future__ import annotations
 import inspect
 import sys
 import traceback
+from types import FunctionType
+
 from typing import (
     List,
     Optional,
@@ -265,8 +267,10 @@ class CommandMeta(type):
         ann = attrs.get("__annotations__", {})
 
         for k, attr in attrs.items():
-            if k.startswith("_"):
+            if k.startswith("_") or type(attr) in {FunctionType, classmethod, staticmethod}:
                 continue
+
+            print(k, attr, type(attr))
 
             v = ann.get(k, "str")
             default = description = min_ = max_ = MISSING
