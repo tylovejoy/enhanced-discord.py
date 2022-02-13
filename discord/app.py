@@ -265,6 +265,9 @@ class CommandMeta(type):
         ann = attrs.get("__annotations__", {})
 
         for k, v in ann.items():
+            if k.startswith("_"):
+                continue
+
             attr = attrs.get(k, MISSING)
             default = description = min_ = max_ = MISSING
             autocomplete = False
