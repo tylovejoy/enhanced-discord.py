@@ -95,7 +95,7 @@ class Interaction:
         The message that sent this interaction.
     locale: Optional[:class:`str`]
         The selected language of the user that invoked
-        this interaction. This is only ``None`` when the 
+        this interaction. This is only ``None`` when the
         interaction is ``InteractionType.ping``.
     guild_locale: Optional[:class:`str`]
         The selected language of the guild that this
