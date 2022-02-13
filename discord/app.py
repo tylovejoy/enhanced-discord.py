@@ -79,7 +79,7 @@ def _option_to_dict(option: _OptionData) -> dict:
     payload = {
         "name": option.name,
         "description": option.description or "none provided",
-        "required": True,
+        "required": option.default is not MISSING,
         "autocomplete": option.autocomplete,
     }
 
