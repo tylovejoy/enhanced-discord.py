@@ -861,6 +861,7 @@ class Intents(BaseFlags):
         """:class:`bool`: Whether guild and direct messages will contain content.
 
         This corresponds to the following fields:
+        
         - :attr:`Message.content`
         - :attr:`Message.embeds`
         - :attr:`Message.attachments`
