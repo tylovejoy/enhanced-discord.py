@@ -856,6 +856,20 @@ class Intents(BaseFlags):
         """
         return 1 << 14
 
+    @flag_value
+    def message_content(self):
+        """:class:`bool`: Whether guild and direct messages will contain content.
+
+        This corresponds to the following fields:
+        - :attr:`Message.content`
+        - :attr:`Message.embeds`
+        - :attr:`Message.attachments`
+        - :attr:`Message.components`
+
+        This does not affect messages retrieved from interactions or correspond to any attributes or classes in the library in terms of cache.
+        """
+        return 1 << 15
+
 
 @fill_with_flags()
 class MemberCacheFlags(BaseFlags):
