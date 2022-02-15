@@ -107,15 +107,19 @@ Member Intent
 - Whether you want to request the guild member list through :meth:`Guild.chunk` or :meth:`Guild.fetch_members`.
 - Whether you want high accuracy member cache under :attr:`Guild.members`.
 
-.. _needs_message_content_intent
+.. _needs_message_content_intent:
 
 Message Content Intent
 ++++++++++++++++++++++
 
-- Whether you use :attr:`Message.content`.
-- Whether you use :attr:`Message.embeds`.
-- Whether you use :attr:`Message.attachments`.
-- Whether you use :attr:`Message.components`.
+- Whether you have access to the content of :attr:`Message.content`, :attr:`Message.embeds`, :attr:`Message.attachments` or :attr:`Message.components`.
+
+.. note::
+
+   You will always get this information if:
+      - You sent the message.
+      - You were sent the message through DMs.
+      - You were specifically mentioned in the message.
 
 .. _intents_member_cache:
 
