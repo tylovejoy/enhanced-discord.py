@@ -1384,7 +1384,10 @@ of :class:`enum.Enum`.
         The user is a HypeSquad Events member.
     .. attribute:: bug_hunter
 
-        The user is a Bug Hunter.
+        The user is a level 1 Bug Hunter.
+    .. attribute:: bug_hunter_level_1
+
+        Alias of :attr:`bug_hunter`.
     .. attribute:: mfa_sms
 
         The user has SMS recovery for Multi Factor Authentication enabled.
@@ -1424,6 +1427,12 @@ of :class:`enum.Enum`.
     .. attribute:: discord_certified_moderator
 
         The user is a Discord Certified Moderator.
+    .. attribute:: bot_http_interactions
+
+        The bot doesn't connect to the gateway but should still be shown as online.
+    .. attribute:: spammer
+
+        The user is marked as a spammer.
 
 .. class:: ActivityType
 

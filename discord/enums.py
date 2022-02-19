@@ -452,6 +452,7 @@ class UserFlags(Enum):
     partner = 2
     hypesquad = 4
     bug_hunter = 8
+    bug_hunter_level_1 = 8
     mfa_sms = 16
     premium_promo_dismissed = 32
     hypesquad_bravery = 64
@@ -465,6 +466,8 @@ class UserFlags(Enum):
     verified_bot = 65536
     verified_bot_developer = 131072
     discord_certified_moderator = 262144
+    bot_http_interactions = 524288
+    spammer = 1048576
 
 
 class ActivityType(Enum):
