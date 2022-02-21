@@ -78,8 +78,19 @@ New Features
     - Add :attr:`Permissions.start_embedded_activities`
     - Add :attr:`Permissions.admin` as alias to :attr:`Permissions.administrator`
     - Add :attr:`Permissions.moderate_members`
+- Add missing kwargs to Interaction and (Sync)Webhook
+    - :meth:`Interaction.delete_original_message`: ``delay``
+    - :meth:`Interaction.edit_original_message`: ``attachments, allowed_mentions, delete_after``
+    - :meth:`InteractionResponse.send_message`: ``allowed_mentions, delete_after, file, files``
+    - :meth:`InteractionResponse.edit_message`: ``allowed_mentions, attachments, delete_after, file, files``
+    - :meth:`InteractionMessage.edit`: ``allowed_mentions, attachments, delete_after``
+    - :meth:`Webhook.edit_message`: ``attachments, delete_after``
+    - :meth:`Webhook.delete_message`: ``delay``
+    - :meth:`WebhookMessage.edit`: ``attachments, delete_after``
+    - :meth:`SyncWebhook.edit_message`: ``attachments, delete_after``
+    - :meth:`SyncWebhook.delete_message`: ``delay``
+    - :meth:`SyncWebhookMessage.edit`: ``attachments, delete_after``
 - Add command attributes for checks
-
     - |commands| Add :class:`~ext.commands.Command`.required_role if :meth:`@commands.has_role <ext.commands.has_role>` is used
     - |commands| Add :class:`~ext.commands.Command`.required_roles if :meth:`@commands.has_any_role <ext.commands.has_role>` is used
     - |commands| Add :class:`~ext.commands.Command`.bot_required_role if :meth:`@commands.bot_has_role <ext.commands.bot_has_role>` is used
