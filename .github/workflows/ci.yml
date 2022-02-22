@@ -6,7 +6,7 @@ on:
     types: [opened, edited]
 
 jobs:
-  black:
+  lints:
     runs-on: ubuntu-latest
     strategy:
       matrix:
