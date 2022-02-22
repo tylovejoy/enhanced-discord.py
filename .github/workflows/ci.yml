@@ -36,7 +36,7 @@ jobs:
           npm install -g pyright
 
       - name: Run Black
-        run: black --line-length 120 --verbose --check
+        run: black discord/ --line-length 120 --verbose --check
 
       - name: Run Pyright
         run: pyright || echo ""
