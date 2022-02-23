@@ -601,6 +601,19 @@ class StagePrivacyLevel(Enum):
     guild_only = 2
 
 
+class ScheduledEventStatus(Enum):
+    scheduled = 1
+    active = 2
+    completed = 3
+    canceled = 4
+
+
+class ScheduledEventEntityType(Enum):
+    stage_instance = 1
+    voice = 2
+    external = 3
+
+
 class NSFWLevel(Enum, comparable=True):
     default = 0
     explicit = 1
