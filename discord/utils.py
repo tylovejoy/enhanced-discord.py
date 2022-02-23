@@ -640,6 +640,9 @@ def _string_width(string: str, *, _IS_ASCII=_IS_ASCII) -> int:
     return sum(2 if func(char) in UNICODE_WIDE_CHAR_TYPE else 1 for char in string)
 
 
+_INVITE_REGEX = re.compile(r"(?:https?\:\/\/)?discord(?:\.gg|(?:app)?\.com\/invite)\/(.+)")
+
+
 def resolve_invite(invite: Union[Invite, str]) -> str:
     """
     Resolves an invite from a :class:`~discord.Invite`, URL or code.
@@ -654,16 +657,11 @@ def resolve_invite(invite: Union[Invite, str]) -> str:
     :class:`str`
         The invite code.
     """
-    from .invite import Invite  # circular import
-
-    if isinstance(invite, Invite):
+    if not isinstance(invite, str):
         return invite.code
-    else:
-        rx = r"(?:https?\:\/\/)?discord(?:\.gg|(?:app)?\.com\/invite)\/(.+)"
-        m = re.match(rx, invite)
-        if m:
-            return m.group(1)
-    return invite
+
+    match = _INVITE_REGEX.match(invite)
+    return match.group(1) if match else invite
 
 
 def resolve_template(code: Union[Template, str]) -> str:

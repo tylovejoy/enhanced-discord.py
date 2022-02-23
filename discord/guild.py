@@ -42,6 +42,7 @@ from typing import (
     overload,
 )
 
+
 from . import utils, abc
 from .role import Role
 from .member import Member, VoiceState
@@ -73,6 +74,7 @@ from .flags import SystemChannelFlags
 from .integrations import Integration, _integration_factory
 from .stage_instance import StageInstance
 from .threads import Thread, ThreadMember
+from .scheduled_events import ScheduledEvent
 from .sticker import GuildSticker
 from .file import File
 from .welcome_screen import *
@@ -85,9 +87,8 @@ MISSING = utils.MISSING
 if TYPE_CHECKING:
     from .abc import Snowflake, SnowflakeTime
     from .types.guild import Ban as BanPayload, Guild as GuildPayload, MFALevel, GuildFeature
-    from .types.threads import (
-        Thread as ThreadPayload,
-    )
+    from .types.scheduled_events import ScheduledEvent as ScheduledEventPayload
+    from .types.threads import Thread as ThreadPayload
     from .types.voice import GuildVoiceState
     from .permissions import Permissions
     from .channel import VoiceChannel, StageChannel, TextChannel, CategoryChannel, StoreChannel
@@ -267,6 +268,7 @@ class Guild(Hashable):
         "_threads",
         "approximate_member_count",
         "approximate_presence_count",
+        "_scheduled_events",
     )
 
     _PREMIUM_GUILD_LIMITS: ClassVar[Dict[Optional[int], _GuildLimit]] = {
@@ -443,6 +445,11 @@ class Guild(Hashable):
         for s in guild.get("stage_instances", []):
             stage_instance = StageInstance(guild=self, data=s, state=state)
             self._stage_instances[stage_instance.id] = stage_instance
+
+        self._scheduled_events: Dict[int, ScheduledEvent] = {}
+        for s in guild.get("guild_scheduled_events", []):
+            scheduled_event = ScheduledEvent(data=s, state=state)
+            self._scheduled_events[scheduled_event.id] = scheduled_event
 
         cache_joined = self._state.member_cache_flags.joined
         self_id = self._state.self_id
@@ -854,6 +861,31 @@ class Guild(Hashable):
             The stage instance or ``None`` if not found.
         """
         return self._stage_instances.get(stage_instance_id)
+
+    @property
+    def scheduled_events(self) -> List[ScheduledEvent]:
+        """List[:class:`ScheduledEvent`]: Returns a :class:`list` of the guild's currently scheduled events.
+
+        .. versionadded:: 2.0
+        """
+        return list(self._scheduled_events.values())
+
+    def get_scheduled_event(self, scheduled_event_id: int, /) -> Optional[ScheduledEvent]:
+        """Returns a scheduled event with the given ID.
+
+        .. versionadded:: 2.0
+
+        Parameters
+        -----------
+        scheduled_event_id: :class:`int`
+            The ID to search for.
+
+        Returns
+        --------
+        Optional[:class:`ScheduledEvent`]
+            The scheduled event or ``None`` if not found.
+        """
+        return self._scheduled_events.get(scheduled_event_id)
 
     @property
     def owner(self) -> Optional[Member]:
@@ -2625,6 +2657,14 @@ class Guild(Hashable):
             self._roles[role.id] = role
 
         return roles
+
+    async def fetch_scheduled_event(self, event_id: int) -> ScheduledEvent:
+        data = await self._state.http.get_guild_scheduled_event(self.id, event_id)
+        return ScheduledEvent(self._state, data)
+
+    async def fetch_scheduled_events(self, with_user_count: bool = False) -> List[ScheduledEvent]:
+        data = await self._state.http.list_guild_scheduled_events(self.id, with_user_count=with_user_count)
+        return [ScheduledEvent(self._state, payload) for payload in data]
 
     async def kick(self, user: Snowflake, *, reason: Optional[str] = None) -> None:
         """|coro|

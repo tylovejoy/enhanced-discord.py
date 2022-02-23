@@ -1402,7 +1402,12 @@ class Client:
     # Invite management
 
     async def fetch_invite(
-        self, url: Union[Invite, str], *, with_counts: bool = True, with_expiration: bool = True
+        self,
+        url: Union[Invite, str],
+        *,
+        with_counts: bool = True,
+        with_expiration: bool = True,
+        scheduled_event_id: Union[str, int] = None,
     ) -> Invite:
         """|coro|
 
@@ -1423,8 +1428,11 @@ class Client:
             :attr:`.Invite.approximate_member_count` and :attr:`.Invite.approximate_presence_count`
             fields.
         with_expiration: :class:`bool`
-            Whether to include the expiration date of the invite. This fills the
-            :attr:`.Invite.expires_at` field.
+            Whether to include the expiration date of the invite. This fills the :attr:`.Invite.expires_at` field.
+
+            .. versionadded:: 2.0
+        scheduled_event_id: :class:`int`
+            The event to fetch with the invite. This fills the :attr:`.Invite.scheduled_event` field.
 
             .. versionadded:: 2.0
 
@@ -1442,7 +1450,12 @@ class Client:
         """
 
         invite_id = utils.resolve_invite(url)
-        data = await self.http.get_invite(invite_id, with_counts=with_counts, with_expiration=with_expiration)
+        data = await self.http.get_invite(
+            invite_id,
+            with_counts=with_counts,
+            with_expiration=with_expiration,
+            guild_scheduled_event_id=scheduled_event_id,
+        )
         return Invite.from_incomplete(state=self._connection, data=data)
 
     async def delete_invite(self, invite: Union[Invite, str]) -> None:
