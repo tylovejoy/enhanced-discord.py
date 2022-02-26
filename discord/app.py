@@ -168,11 +168,24 @@ AutoCompleteResponseT = TypeVar("AutoCompleteResponseT", bound="AutoCompleteResp
 
 
 class AutoCompleteResponse(dict):  # TODO: docs
+    """Represents a response to an autocomplete request.
+
+    Used to show list of options to the user.
+    """
+
     def add_option(self, name: str, value: Union[str, int]) -> AutoCompleteResponseT:
+        """Add an option to the response."""
         self[name] = value
         return self
 
     def remove_option(self, name: str) -> AutoCompleteResponseT:
+        """Remove an option from the response.
+
+        Raises
+        ------
+        KeyError
+            The `name` was not found in the response.
+        """
         del self[name]
         return self
 
@@ -181,6 +194,23 @@ class AutoCompleteResponse(dict):  # TODO: docs
 
 
 class Option(optionbase):
+    """Represents a command option.
+
+    Attributes
+    ----------
+    autocomplete: :class:`bool`
+        Whether or not the option should be autocompleted.
+    default: :class:`Any`
+        The default value for the option if the option is optional.
+    description: :class:`str`
+        The description of the option.
+    max: :class:`Union[class:`int`, :class:`float`]`
+        The maximum value for the option. Inclusive. Only valid for integers and floats.
+    min: :class:`Union[class:`int`, :class:`float`]`
+        The minimum value for the option. Inclusive. Only valid for integers and floats.
+
+    """
+
     __slots__ = ("autocomplete", "default", "description", "max", "min")
 
     def __init__(
@@ -374,20 +404,45 @@ class Command(metaclass=CommandMeta):
         return payload
 
     async def callback(self) -> None:
+        """This method is called when the command is used."""
         ...
 
     async def autocomplete(
         self, options: Dict[str, Union[int, float, str]], focused: str
     ) -> List[ApplicationCommandOptionChoice]:
+        """This method is called when an autocomplete is triggered.
+
+        Parameters
+        ----------
+        options : Dict[str, Union[int, float, str]]
+            The options that have been filled by the user so far.
+        focused : str
+            The name of the option that is currently focused.
+
+        Returns
+        -------
+        :class:`AutoCompleteResponse`
+            The response to the autocomplete request.
+        """
         ...
 
     async def check(self) -> bool:
+        """This method is called before the callback is called."""
         return True
 
     async def pre_check(self) -> bool:
+        """This method is called before .meth:`check` is called. No class attributes are available at the time of execution."""
         return True
 
     async def error(self, exception: Exception) -> None:
+        """This method is called whenever an exception occurs in :meth:`.autocomplete` or :meth:`.callback`
+
+        Parameters
+        ----------
+
+        exception : Exception
+            The exception that was thrown.
+        """
         traceback.print_exception(type(exception), exception, exception.__traceback__)
 
     async def send(
@@ -658,9 +713,11 @@ class CommandState:
             raise ApplicationCommandNotFound(f"ApplicationCommand '{name}' of type {type.name} not found")
 
     def _internal_add(self, cls: Type[Command]) -> None:
+      
         async def callback(client: Client, interaction: Interaction, _) -> None:
             _cls = cls
             _cls._id_ = int(interaction.data["id"])
+
             options = interaction.data.get("options")
 
             # first check if we're dealing with a subcommand
