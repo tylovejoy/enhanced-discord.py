@@ -186,6 +186,7 @@ class HTTPClient:
         self.proxy: Optional[str] = proxy
         self.proxy_auth: Optional[aiohttp.BasicAuth] = proxy_auth
         self.use_clock: bool = not unsync_clock
+        self.version = 10
 
         u_agent = "DiscordBot (https://github.com/iDevision/enhanced-discord.py {0}) Python/{1[0]}.{1[1]} aiohttp/{2}"
         self.user_agent: str = u_agent.format(__version__, sys.version_info, aiohttp.__version__)
@@ -1939,10 +1940,10 @@ class HTTPClient:
         except HTTPException as exc:
             raise GatewayNotFound() from exc
         if zlib:
-            value = "{0}?encoding={1}&v=10&compress=zlib-stream"
+            value = "{0}?encoding={1}&v={2}&compress=zlib-stream"
         else:
-            value = "{0}?encoding={1}&v=10"
-        return value.format(data["url"], encoding)
+            value = "{0}?encoding={1}&v={2}"
+        return value.format(data["url"], encoding, self.version)
 
     async def get_bot_gateway(self, *, encoding: str = "json", zlib: bool = True) -> Tuple[int, str]:
         try:
@@ -1951,10 +1952,10 @@ class HTTPClient:
             raise GatewayNotFound() from exc
 
         if zlib:
-            value = "{0}?encoding={1}&v=10&compress=zlib-stream"
+            value = "{0}?encoding={1}&v={2}&compress=zlib-stream"
         else:
-            value = "{0}?encoding={1}&v=10"
-        return data["shards"], value.format(data["url"], encoding)
+            value = "{0}?encoding={1}&v={2}"
+        return data["shards"], value.format(data["url"], encoding, self.version)
 
     def get_user(self, user_id: Snowflake) -> Response[user.User]:
         return self.request(Route("GET", "/users/{user_id}", user_id=user_id))
