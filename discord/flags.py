@@ -858,7 +858,7 @@ class Intents(BaseFlags):
 
     @flag_value
     def message_content(self):
-        """:class:`bool`: Whether guild and direct messages will contain content.
+        """:class:`bool`: Whether guild messages will contain content.
 
         This corresponds to the following fields:
         
