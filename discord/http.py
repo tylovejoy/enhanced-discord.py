@@ -985,7 +985,18 @@ class HTTPClient:
 
     # Scheduled events
 
-    _VALID_EVENT_KEYS = ("channel_id", "name", "privacy_level", "scheduled_start_time", "description", "entity_type")
+    _VALID_EVENT_KEYS = (
+        "channel_id",
+        "entity_metadata",
+        "name",
+        "privacy_level",
+        "scheduled_start_time",
+        "scheduled_end_time",
+        "description",
+        "entity_type",
+        "status",
+        "image",
+    )
 
     def list_guild_scheduled_events(
         self, guild_id: Snowflake, with_user_count: bool
