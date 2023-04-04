@@ -603,7 +603,7 @@ class InteractionResponse:
 
         self.responded_at = utils.utcnow()
 
-        if delete_after is not None and ephemeral is False:
+        if delete_after is not None and not ephemeral:
             await parent.delete_original_message(delay=delete_after)
 
     async def edit_message(

@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+
 from __future__ import annotations
 
 
@@ -145,10 +146,7 @@ application_option_channel_types = {
 }
 
 
-if TYPE_CHECKING:
-    P = ParamSpec("P")
-else:
-    P = TypeVar("P")
+P = ParamSpec("P") if TYPE_CHECKING else TypeVar("P")
 
 
 def unwrap_function(function: Callable[..., Any]) -> Callable[..., Any]:
@@ -392,9 +390,11 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
         self.callback = func
         self.enabled: bool = kwargs.get("enabled", True)
 
-        self.slash_command: Optional[bool] = kwargs.get("slash_command", None)
-        self.message_command: Optional[bool] = kwargs.get("message_command", None)
-        self.slash_command_guilds: Optional[Iterable[int]] = kwargs.get("slash_command_guilds", None)
+        self.slash_command: Optional[bool] = kwargs.get("slash_command")
+        self.message_command: Optional[bool] = kwargs.get("message_command")
+        self.slash_command_guilds: Optional[Iterable[int]] = kwargs.get(
+            "slash_command_guilds"
+        )
 
         help_doc = kwargs.get("help")
         if help_doc is not None:
@@ -598,7 +598,7 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
     def _update_copy(self: CommandT, kwargs: Dict[str, Any]) -> CommandT:
         if kwargs:
             kw = kwargs.copy()
-            kw.update(self.__original_kwargs__)
+            kw |= self.__original_kwargs__
             copy = self.__class__(self.callback, **kw)
             return self._ensure_assignment_on_copy(copy)
         else:
@@ -669,11 +669,10 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
             try:
                 argument = view.get_quoted_word()
             except ArgumentParsingError as exc:
-                if self._is_typing_optional(param.annotation):
-                    view.index = previous
-                    return None
-                else:
+                if not self._is_typing_optional(param.annotation):
                     raise exc
+                view.index = previous
+                return None
         view.previous = previous
 
         # type-checker fails to narrow argument
@@ -698,9 +697,7 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
             else:
                 result.append(value)
 
-        if not result and not required:
-            return param.default
-        return result
+        return param.default if not result and not required else result
 
     async def _transform_greedy_var_pos(self, ctx: Context, param: inspect.Parameter, converter: Any) -> Any:
         view = ctx.view
@@ -779,9 +776,7 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
 
         For example in commands ``?a b c test``, the root parent is ``a``.
         """
-        if not self.parent:
-            return None
-        return self.parents[-1]
+        return self.parents[-1] if self.parent else None
 
     @property
     def qualified_name(self) -> str:
@@ -792,9 +787,8 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
         ``one two three``.
         """
 
-        parent = self.full_parent_name
-        if parent:
-            return parent + " " + self.name
+        if parent := self.full_parent_name:
+            return f"{parent} {self.name}"
         else:
             return self.name
 
@@ -849,18 +843,14 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
                         break
 
         if not self.ignore_extra and not view.eof:
-            raise TooManyArguments("Too many arguments passed to " + self.qualified_name)
+            raise TooManyArguments(f"Too many arguments passed to {self.qualified_name}")
 
     async def call_before_hooks(self, ctx: Context) -> None:
         # now that we're done preparing we can call the pre-command hooks
         # first, call the command local hook:
         cog = self.cog
         if self._before_invoke is not None:
-            # should be cog if @commands.before_invoke is used
-            instance = getattr(self._before_invoke, "__self__", cog)
-            # __self__ only exists for methods, not functions
-            # however, if @command.before_invoke is used, it will be a function
-            if instance:
+            if instance := getattr(self._before_invoke, "__self__", cog):
                 await self._before_invoke(instance, ctx)  # type: ignore
             else:
                 await self._before_invoke(ctx)  # type: ignore
@@ -879,8 +869,7 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
     async def call_after_hooks(self, ctx: Context) -> None:
         cog = self.cog
         if self._after_invoke is not None:
-            instance = getattr(self._after_invoke, "__self__", cog)
-            if instance:
+            if instance := getattr(self._after_invoke, "__self__", cog):
                 await self._after_invoke(instance, ctx)  # type: ignore
             else:
                 await self._after_invoke(ctx)  # type: ignore
@@ -901,8 +890,7 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
             current = dt.replace(tzinfo=datetime.timezone.utc).timestamp()
             bucket = self._buckets.get_bucket(ctx.message, current)
             if bucket is not None:
-                retry_after = bucket.update_rate_limit(current)
-                if retry_after:
+                if retry_after := bucket.update_rate_limit(current):
                     raise CommandOnCooldown(bucket, retry_after, self._buckets.type)  # type: ignore
 
     async def prepare(self, ctx: Context) -> None:
@@ -1114,9 +1102,7 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
         """
         if self.brief is not None:
             return self.brief
-        if self.help is not None:
-            return self.help.split("\n", 1)[0]
-        return ""
+        return self.help.split("\n", 1)[0] if self.help is not None else ""
 
     def _is_typing_optional(self, annotation: Union[T, Optional[T]]) -> TypeGuard[Optional[T]]:
         return getattr(annotation, "__origin__", None) is Union and type(None) in annotation.__args__  # type: ignore
@@ -1155,7 +1141,11 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
                 # do [name] since [name=None] or [name=] are not exactly useful for the user.
                 should_print = param.default if isinstance(param.default, str) else param.default is not None
                 if should_print:
-                    result.append(f"[{name}={param.default}]" if not greedy else f"[{name}={param.default}]...")
+                    result.append(
+                        f"[{name}={param.default}]..."
+                        if greedy
+                        else f"[{name}={param.default}]"
+                    )
                     continue
                 else:
                     result.append(f"[{name}]")
@@ -1229,11 +1219,13 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
                         return False
 
             predicates = self.checks
-            if not predicates:
-                # since we have no checks, then we just return True.
-                return True
-
-            return await discord.utils.async_all(predicate(ctx) for predicate in predicates)  # type: ignore
+            return (
+                await discord.utils.async_all(
+                    predicate(ctx) for predicate in predicates
+                )
+                if predicates
+                else True
+            )
         finally:
             ctx.command = original
 
@@ -1297,7 +1289,10 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
             if annotation in {Union[discord.Member, discord.Role], Union[MemberConverter, RoleConverter]}:
                 option["type"] = 9
 
-            elif all([arg in application_option_channel_types for arg in annotation.__args__]):
+            elif all(
+                arg in application_option_channel_types
+                for arg in annotation.__args__
+            ):
                 option["type"] = 7
                 option["channel_types"] = [
                     discord_value

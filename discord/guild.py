@@ -818,10 +818,14 @@ class Guild(Hashable):
 
         .. versionadded:: 1.6
         """
-        for role in self._roles.values():
-            if role.is_premium_subscriber():
-                return role
-        return None
+        return next(
+            (
+                role
+                for role in self._roles.values()
+                if role.is_premium_subscriber()
+            ),
+            None,
+        )
 
     @property
     def self_role(self) -> Optional[Role]:
@@ -943,17 +947,13 @@ class Guild(Hashable):
         offline members.
         """
         count = getattr(self, "_member_count", None)
-        if count is None:
-            return False
-        return count == len(self._members)
+        return False if count is None else count == len(self._members)
 
     @property
     def shard_id(self) -> int:
         """:class:`int`: Returns the shard ID for this guild if applicable."""
         count = self._state.shard_count
-        if count is None:
-            return 0
-        return (self.id >> 22) % count
+        return 0 if count is None else (self.id >> 22) % count
 
     @property
     def created_at(self) -> datetime.datetime:
@@ -1025,12 +1025,14 @@ class Guild(Hashable):
                 raise InvalidArgument(f"Expected PermissionOverwrite received {perm.__class__.__name__}")
 
             allow, deny = perm.pair()
-            payload = {"allow": allow.value, "deny": deny.value, "id": target.id}
-
-            if isinstance(target, Role):
-                payload["type"] = abc._Overwrites.ROLE
-            else:
-                payload["type"] = abc._Overwrites.MEMBER
+            payload = {
+                "allow": allow.value,
+                "deny": deny.value,
+                "id": target.id,
+                "type": abc._Overwrites.ROLE
+                if isinstance(target, Role)
+                else abc._Overwrites.MEMBER,
+            }
 
             perms.append(payload)
 
@@ -1529,11 +1531,7 @@ class Guild(Hashable):
             fields["afk_timeout"] = afk_timeout
 
         if icon is not MISSING:
-            if icon is None:
-                fields["icon"] = icon
-            else:
-                fields["icon"] = utils._bytes_to_base64_data(icon)
-
+            fields["icon"] = icon if icon is None else utils._bytes_to_base64_data(icon)
         if banner is not MISSING:
             if banner is None:
                 fields["banner"] = banner
@@ -1790,15 +1788,12 @@ class Guild(Hashable):
         Optional[:class:`Member`]
             The member or ``None`` if not found.
         """
-        member = self.get_member(member_id)
-
-        if member:
+        if member := self.get_member(member_id):
             return member
-        else:
-            try:
-                return await self.fetch_member(member_id)
-            except NotFound:
-                return None
+        try:
+            return await self.fetch_member(member_id)
+        except NotFound:
+            return None
 
     async def fetch_ban(self, user: Snowflake) -> BanEntry:
         """|coro|
@@ -1959,11 +1954,7 @@ class Guild(Hashable):
         if not isinstance(days, int):
             raise InvalidArgument(f"Expected int for ``days``, received {days.__class__.__name__} instead.")
 
-        if roles:
-            role_ids = [str(role.id) for role in roles]
-        else:
-            role_ids = []
-
+        role_ids = [str(role.id) for role in roles] if roles else []
         data = await self._state.http.prune_members(
             self.id, days, compute_prune_count=compute_prune_count, roles=role_ids, reason=reason
         )
@@ -2051,11 +2042,7 @@ class Guild(Hashable):
         if not isinstance(days, int):
             raise InvalidArgument(f"Expected int for ``days``, received {days.__class__.__name__} instead.")
 
-        if roles:
-            role_ids = [str(role.id) for role in roles]
-        else:
-            role_ids = []
-
+        role_ids = [str(role.id) for role in roles] if roles else []
         data = await self._state.http.estimate_pruned_members(self.id, days, role_ids)
         return data["pruned"]
 
@@ -2414,11 +2401,7 @@ class Guild(Hashable):
         """
 
         img = utils._bytes_to_base64_data(image)
-        if roles:
-            role_ids = [role.id for role in roles]
-        else:
-            role_ids = []
-
+        role_ids = [role.id for role in roles] if roles else []
         data = await self._state.http.create_custom_emoji(self.id, name, img, roles=role_ids, reason=reason)
         return self._state.store_emoji(self, data)
 
@@ -2562,12 +2545,11 @@ class Guild(Hashable):
         :class:`Role`
             The newly created role.
         """
-        fields: Dict[str, Any] = {}
-        if permissions is not MISSING:
-            fields["permissions"] = str(permissions.value)
-        else:
-            fields["permissions"] = "0"
-
+        fields: Dict[str, Any] = {
+            "permissions": str(permissions.value)
+            if permissions is not MISSING
+            else "0"
+        }
         actual_colour = colour or color or Colour.default()
         if isinstance(actual_colour, int):
             fields["color"] = actual_colour
@@ -2590,10 +2572,7 @@ class Guild(Hashable):
             fields["icon"] = utils._bytes_to_base64_data(icon)
 
         data = await self._state.http.create_role(self.id, reason=reason, **fields)
-        role = Role(guild=self, data=data, state=self._state)
-
-        # TODO: add to cache
-        return role
+        return Role(guild=self, data=data, state=self._state)
 
     async def edit_role_positions(self, positions: Dict[Snowflake, int], *, reason: Optional[str] = None) -> List[Role]:
         """|coro|
@@ -2859,11 +2838,7 @@ class Guild(Hashable):
         :class:`AuditLogEntry`
             The audit log entry.
         """
-        if user is not None:
-            user_id = user.id
-        else:
-            user_id = None
-
+        user_id = user.id if user is not None else None
         if action:
             action = action.value
 

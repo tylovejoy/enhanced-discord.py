@@ -183,7 +183,7 @@ def when_mentioned_or(*prefixes: str) -> Callable[[Union[Bot, AutoShardedBot], M
 
 
 def _is_submodule(parent: str, child: str) -> bool:
-    return parent == child or child.startswith(parent + ".")
+    return parent == child or child.startswith(f"{parent}.")
 
 
 def _unwrap_slash_groups(
@@ -253,7 +253,9 @@ class BotBase(GroupMixin):
         self.owner_id = options.get("owner_id")
         self.owner_ids = options.get("owner_ids", set())
         self.strip_after_prefix = options.get("strip_after_prefix", False)
-        self.slash_command_guilds: Optional[Iterable[int]] = options.get("slash_command_guilds", None)
+        self.slash_command_guilds: Optional[Iterable[int]] = options.get(
+            "slash_command_guilds"
+        )
 
         if self.owner_id and self.owner_ids:
             raise TypeError("Both owner_id and owner_ids are set.")
@@ -274,7 +276,7 @@ class BotBase(GroupMixin):
     def dispatch(self, event_name: str, *args: Any, **kwargs: Any) -> None:
         # super() will resolve to Client
         super().dispatch(event_name, *args, **kwargs)  # type: ignore
-        ev = "on_" + event_name
+        ev = f"on_{event_name}"
         for event in self.extra_events.get(ev, []):
             self._schedule_event(event, ev, *args, **kwargs)  # type: ignore
 
@@ -525,11 +527,7 @@ class BotBase(GroupMixin):
         if self.owner_id:
             owner = await self.try_user(self.owner_id)
 
-            if owner:
-                return [owner]
-            else:
-                return []
-
+            return [owner] if owner else []
         elif self.owner_ids:
             owners = []
 
@@ -830,11 +828,12 @@ class BotBase(GroupMixin):
 
         # remove all the listeners from the module
         for event_list in self.extra_events.copy().values():
-            remove = []
-            for index, event in enumerate(event_list):
-                if event.__module__ is not None and _is_submodule(name, event.__module__):
-                    remove.append(index)
-
+            remove = [
+                index
+                for index, event in enumerate(event_list)
+                if event.__module__ is not None
+                and _is_submodule(name, event.__module__)
+            ]
             for index in reversed(remove):
                 del event_list[index]
 

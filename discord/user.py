@@ -201,9 +201,7 @@ class BaseUser(_UserTag):
 
             This information is only available via :meth:`Client.fetch_user`.
         """
-        if self._accent_colour is None:
-            return None
-        return Colour(self._accent_colour)
+        return None if self._accent_colour is None else Colour(self._accent_colour)
 
     @property
     def accent_color(self) -> Optional[Colour]:
@@ -312,10 +310,11 @@ class BaseUser(_UserTag):
             The upgraded version of the user.
         """
         create_new_obj: Set = {"banner"}
-        for key in options.copy():
-            if getattr(self, key, None) is not None:
-                del options[key]
-
+        options = {
+            key: value
+            for key, value in options.items()
+            if getattr(self, key, None) is None
+        }
         user: Union[BU, User] = self
         if any(create_new_obj.intersection(options.keys())):
             new_data = await self._state.http.get_user(self.id)
@@ -510,8 +509,7 @@ class User(BaseUser, discord.abc.Messageable):
         return self
 
     async def _get_channel(self) -> DMChannel:
-        ch = await self.create_dm()
-        return ch
+        return await self.create_dm()
 
     @property
     def dm_channel(self) -> Optional[DMChannel]:

@@ -185,20 +185,16 @@ class ConnectionState:
         self.allowed_mentions: Optional[AllowedMentions] = allowed_mentions
         self._chunk_requests: Dict[Union[int, str], ChunkRequest] = {}
 
-        activity = options.get("activity", None)
+        activity = options.get("activity")
         if activity:
             if not isinstance(activity, BaseActivity):
                 raise TypeError("activity parameter must derive from BaseActivity.")
 
             activity = activity.to_dict()
 
-        status = options.get("status", None)
+        status = options.get("status")
         if status:
-            if status is Status.offline:
-                status = "invisible"
-            else:
-                status = str(status)
-
+            status = "invisible" if status is Status.offline else str(status)
         if not isinstance(intents, Intents):
             raise TypeError(f"intents parameter must be Intent not {type(intents)!r}")
 
@@ -211,14 +207,14 @@ class ConnectionState:
         if not intents.members and self._chunk_guilds:
             raise ValueError("Intents.members must be enabled to chunk guilds at startup.")
 
-        cache_flags = options.get("member_cache_flags", None)
+        cache_flags = options.get("member_cache_flags")
         if cache_flags is None:
             cache_flags = MemberCacheFlags.from_intents(intents)
-        else:
-            if not isinstance(cache_flags, MemberCacheFlags):
-                raise TypeError(f"member_cache_flags parameter must be MemberCacheFlags not {type(cache_flags)!r}")
-
+        elif isinstance(cache_flags, MemberCacheFlags):
             cache_flags._verify_intents(intents)
+
+        else:
+            raise TypeError(f"member_cache_flags parameter must be MemberCacheFlags not {type(cache_flags)!r}")
 
         self.member_cache_flags: MemberCacheFlags = cache_flags
         self._activity: Optional[ActivityPayload] = activity
@@ -524,11 +520,10 @@ class ConnectionState:
                     if self._guild_needs_chunking(guild):
                         future = await self.chunk_guild(guild, wait=False)
                         states.append((guild, future))
+                    elif guild.unavailable is False:
+                        self.dispatch("guild_available", guild)
                     else:
-                        if guild.unavailable is False:
-                            self.dispatch("guild_available", guild)
-                        else:
-                            self.dispatch("guild_join", guild)
+                        self.dispatch("guild_join", guild)
 
             for guild, future in states:
                 try:
@@ -642,8 +637,7 @@ class ConnectionState:
         emoji = PartialEmoji.with_state(self, id=emoji_id, animated=emoji.get("animated", False), name=emoji["name"])
         raw = RawReactionActionEvent(data, emoji, "REACTION_ADD")
 
-        member_data = data.get("member")
-        if member_data:
+        if member_data := data.get("member"):
             guild = self._get_guild(raw.guild_id)
             if guild is not None:
                 raw.member = Member(data=member_data, guild=guild, state=self)
@@ -658,9 +652,9 @@ class ConnectionState:
         if message is not None:
             emoji = self._upgrade_partial_emoji(emoji)
             reaction = message._add_reaction(data, emoji, raw.user_id)
-            user = raw.member or self._get_reaction_user(message.channel, raw.user_id)
-
-            if user:
+            if user := raw.member or self._get_reaction_user(
+                message.channel, raw.user_id
+            ):
                 self.dispatch("reaction_add", reaction, user)
 
     def parse_message_reaction_remove_all(self, data) -> None:
@@ -688,8 +682,7 @@ class ConnectionState:
             except (AttributeError, ValueError):  # eventual consistency lol
                 pass
             else:
-                user = self._get_reaction_user(message.channel, raw.user_id)
-                if user:
+                if user := self._get_reaction_user(message.channel, raw.user_id):
                     self.dispatch("reaction_remove", reaction, user)
 
     def parse_message_reaction_remove_emoji(self, data) -> None:
@@ -736,8 +729,7 @@ class ConnectionState:
             return
 
         old_member = Member._copy(member)
-        user_update = member._presence_update(data=data, user=user)
-        if user_update:
+        if user_update := member._presence_update(data=data, user=user):
             self.dispatch("user_update", user_update[0], user_update[1])
 
         self.dispatch("presence_update", old_member, member)
@@ -746,8 +738,7 @@ class ConnectionState:
         # self.user is *always* cached when this is called
         user: ClientUser = self.user  # type: ignore
         user._update(data)
-        ref = self._users.get(user.id)
-        if ref:
+        if ref := self._users.get(user.id):
             ref._update(data)
 
     def parse_invite_create(self, data) -> None:
@@ -1002,8 +993,7 @@ class ConnectionState:
         if member is not None:
             old_member = Member._copy(member)
             member._update(data)
-            user_update = member._update_inner_user(user)
-            if user_update:
+            if user_update := member._update_inner_user(user):
                 self.dispatch("user_update", user_update[0], user_update[1])
 
             self.dispatch("member_update", old_member, member)
@@ -1011,9 +1001,7 @@ class ConnectionState:
             if self.member_cache_flags.joined:
                 member = Member(data=data, guild=guild, state=self)
 
-                # Force an update on the inner user if necessary
-                user_update = member._update_inner_user(user)
-                if user_update:
+                if user_update := member._update_inner_user(user):
                     self.dispatch("user_update", user_update[0], user_update[1])
 
                 guild._add_member(member)
@@ -1110,9 +1098,7 @@ class ConnectionState:
             self._chunk_requests[guild.id] = request = ChunkRequest(guild.id, self.loop, self._get_guild, cache=cache)
             await self.chunker(guild.id, nonce=request.nonce)
 
-        if wait:
-            return await request.wait()
-        return request.get_future()
+        return await request.wait() if wait else request.get_future()
 
     async def _chunk_and_dispatch(self, guild, unavailable):
         try:
@@ -1349,10 +1335,9 @@ class ConnectionState:
     def parse_voice_state_update(self, data) -> None:
         guild = self._get_guild(utils._get_as_snowflake(data, "guild_id"))
         channel_id = utils._get_as_snowflake(data, "channel_id")
-        flags = self.member_cache_flags
-        # self.user is *always* cached when this is called
-        self_id = self.user.id  # type: ignore
         if guild is not None:
+            # self.user is *always* cached when this is called
+            self_id = self.user.id  # type: ignore
             if int(data["user_id"]) == self_id:
                 voice = self._get_voice_client(guild.id)
                 if voice is not None:
@@ -1361,6 +1346,7 @@ class ConnectionState:
 
             member, before, after = guild._update_voice_state(data, channel_id)  # type: ignore
             if member is not None:
+                flags = self.member_cache_flags
                 if flags.voice:
                     if channel_id is None and flags._voice_only and member.id != self_id:
                         # Only remove from cache if we only have the voice flag enabled
@@ -1387,8 +1373,7 @@ class ConnectionState:
     def parse_typing_start(self, data) -> None:
         raw = RawTypingEvent(data)
 
-        member_data = data.get("member")
-        if member_data:
+        if member_data := data.get("member"):
             guild = self._get_guild(raw.guild_id)
             if guild is not None:
                 raw.member = Member(data=member_data, guild=guild, state=self)

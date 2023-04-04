@@ -255,7 +255,7 @@ class Embed:
             except KeyError:
                 continue
             else:
-                setattr(self, "_" + attr, value)
+                setattr(self, f"_{attr}", value)
 
         return self
 

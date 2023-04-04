@@ -236,7 +236,7 @@ class HTTPClient:
         }
 
         if self.token is not None:
-            headers["Authorization"] = "Bot " + self.token
+            headers["Authorization"] = f"Bot {self.token}"
         # some checking if it's a JSON request
         if "json" in kwargs:
             headers["Content-Type"] = "application/json"
@@ -853,10 +853,6 @@ class HTTPClient:
         reason: Optional[str] = None,
         **options: Any,
     ) -> Response[channel.GuildChannel]:
-        payload = {
-            "type": channel_type,
-        }
-
         valid_keys = (
             "name",
             "parent_id",
@@ -871,8 +867,9 @@ class HTTPClient:
             "video_quality_mode",
             "auto_archive_duration",
         )
-        payload.update({k: v for k, v in options.items() if k in valid_keys and v is not None})
-
+        payload = {
+            "type": channel_type,
+        } | {k: v for k, v in options.items() if k in valid_keys and v is not None}
         return self.request(
             Route("POST", "/guilds/{guild_id}/channels", guild_id=guild_id), json=payload, reason=reason
         )
@@ -1268,14 +1265,13 @@ class HTTPClient:
             }
         ]
 
-        for k, v in payload.items():
-            form.append(
-                {
-                    "name": k,
-                    "value": v,
-                }
-            )
-
+        form.extend(
+            {
+                "name": k,
+                "value": v,
+            }
+            for k, v in payload.items()
+        )
         return self.request(
             Route("POST", "/guilds/{guild_id}/stickers", guild_id=guild_id), form=form, files=[file], reason=reason
         )

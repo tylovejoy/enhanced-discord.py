@@ -56,11 +56,7 @@ __all__ = ("AutoCompleteResponse", "Command", "UserCommand", "MessageCommand", "
 CommandT = TypeVar("CommandT", bound="Command")
 NoneType = type(None)
 
-if TYPE_CHECKING:
-    optionbase = Any
-else:
-    optionbase = object
-
+optionbase = Any if TYPE_CHECKING else object
 application_option_type__lookup = {
     str: 3,
     int: 4,
@@ -111,10 +107,10 @@ def _option_to_dict(option: _OptionData) -> dict:
         if option.min and option.max and option.min > option.max:
             raise ValueError(f"{option} has a min value that is greater than the max value")
 
-        if option.min is not MISSING:
-            payload["min_value"] = option.min
-        if option.max is not MISSING:
-            payload["max_value"] = option.max
+    if option.min is not MISSING:
+        payload["min_value"] = option.min
+    if option.max is not MISSING:
+        payload["max_value"] = option.max
 
     if origin is not Literal:
         payload["type"] = application_option_type__lookup.get(arg, 3)
@@ -263,26 +259,12 @@ class _OptionData:
 
 
 class CommandMeta(type):
-    def __new__(
-        mcs,
-        classname: str,
-        bases: tuple,
-        attrs: Dict[str, Any],
-        *,
-        name: str = MISSING,
-        description: str = MISSING,
-        parent: Type[Command] = MISSING,
-        guilds: List[Snowflake] = MISSING,
-    ):
+    def __new__(cls, classname: str, bases: tuple, attrs: Dict[str, Any], *, name: str = MISSING, description: str = MISSING, parent: Type[Command] = MISSING, guilds: List[Snowflake] = MISSING):
         attrs["_arguments_"] = arguments = []  # type: List[_OptionData]
         attrs["_children_"] = {}
         attrs["_permissions_"] = {}
 
-        if name is not MISSING:
-            attrs["_name_"] = name
-        else:
-            attrs["_name_"] = classname
-
+        attrs["_name_"] = name if name is not MISSING else classname
         if description:
             attrs["_description_"] = description
         elif attrs.get("__doc__") is not None:
@@ -320,7 +302,7 @@ class CommandMeta(type):
         elif type is ApplicationCommandType.message_command and (len(arguments) != 1 or arguments[0].name != "message"):
             raise ArgumentMismatchError("Message Commands must take exactly one argument, named 'message'")
 
-        t = super().__new__(mcs, classname, bases, attrs)
+        t = super().__new__(cls, classname, bases, attrs)
 
         if parent is not MISSING:
             parent._children_[attrs["_name_"]] = t  # type: ignore
@@ -346,10 +328,10 @@ class Command(metaclass=CommandMeta):
 
     @classmethod
     def set_permissions(cls, guild_id: Snowflake, permissions: Dict[Union[Role, Member], bool]) -> None:
-        data: Dict[Snowflake, Tuple[Literal[1, 2], bool]] = {}
-        for k, v in permissions.items():
-            data[k.id] = (1 if isinstance(k, Role) else 2, v)  # type: ignore
-
+        data: Dict[Snowflake, Tuple[Literal[1, 2], bool]] = {
+            k.id: (1 if isinstance(k, Role) else 2, v)
+            for k, v in permissions.items()
+        }
         cls._permissions_[int(guild_id)].update(data)
 
     @classmethod
@@ -490,8 +472,8 @@ class Command(metaclass=CommandMeta):
         ValueError
             The length of ``embeds`` was invalid.
         """
-        if not self.interaction.response.is_done():
-            return await self.interaction.response.send_message(
+        return (
+            await self.interaction.followup.send(
                 content=content,
                 embed=embed,
                 embeds=embeds,
@@ -500,8 +482,8 @@ class Command(metaclass=CommandMeta):
                 ephemeral=ephemeral,
                 delete_after=delete_after,
             )
-        else:
-            return await self.interaction.followup.send(
+            if self.interaction.response.is_done()
+            else await self.interaction.response.send_message(
                 content=content,
                 embed=embed,
                 embeds=embeds,
@@ -510,6 +492,7 @@ class Command(metaclass=CommandMeta):
                 ephemeral=ephemeral,
                 delete_after=delete_after,
             )
+        )
 
     async def defer(self, *, ephemeral: bool = False) -> None:
         """|coro|
@@ -576,18 +559,15 @@ class SlashCommand(Command, Generic[CommandT]):
         options: List[ApplicationCommandInteractionDataOption],
         arguments: List[_OptionData],
     ) -> None:
-        parsed = {}
-
-        for option in options:
-            if option["type"] in {3, 4, 5, 10}:
-                parsed[option["name"]] = option["value"]
-            else:
-                parsed[option["name"]] = _parse_index[option["type"]](interaction, state, option)
-
-        unset = {x.name for x in arguments} - set(parsed.keys())
-        if unset:
+        parsed = {
+            option["name"]: option["value"]
+            if option["type"] in {3, 4, 5, 10}
+            else _parse_index[option["type"]](interaction, state, option)
+            for option in options
+        }
+        if unset := {x.name for x in arguments} - set(parsed.keys()):
             args: Dict[str, _OptionData] = {x.name: x for x in arguments}
-            parsed.update({x: args[x].handle_default(interaction) for x in unset})
+            parsed |= {x: args[x].handle_default(interaction) for x in unset}
 
         self.__dict__.update(parsed)
 
@@ -618,8 +598,7 @@ class CommandState:
             appinfo = await self.http.application_info()
             self._application_id = appinfo["id"]
 
-        global_commands = self.pre_registration.get(None, [])
-        if global_commands:
+        if global_commands := self.pre_registration.get(None, []):
             store = {(cmd["name"], cmd["type"]): callback for cmd, callback in global_commands}
             payload: List[ApplicationCommand] = await self.http.bulk_upsert_global_commands(
                 self._application_id, [cmd[0] for cmd in global_commands]  # type: ignore
@@ -696,10 +675,7 @@ class CommandState:
         """
 
         def finder(cmd: Tuple[Union[UploadableApplicationCommand, UploadableSlashCommand], _callback]) -> bool:
-            if cmd[0]["name"] == name and cmd[0]["type"] == type.value:
-                return True
-
-            return False
+            return cmd[0]["name"] == name and cmd[0]["type"] == type.value
 
         did_find = False
 
@@ -770,12 +746,7 @@ class CommandState:
         for x in data:
             val = x["value"]
 
-            if x["type"] in {6, 7, 8}:
-                options[x["name"]] = int(val)
-
-            else:
-                options[x["name"]] = val
-
+            options[x["name"]] = int(val) if x["type"] in {6, 7, 8} else val
             if "focused" in x:
                 focused = x["name"]
 
@@ -784,7 +755,7 @@ class CommandState:
             resp = list(resp)
         except Exception as e:
             raise AutoCompleteResponseFormattingError(
-                f"Could not format the returned autocomplete object properly."
+                "Could not format the returned autocomplete object properly."
             ) from e
 
         await inst.interaction.response.autocomplete_result(resp)

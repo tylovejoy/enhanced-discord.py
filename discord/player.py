@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+
 from __future__ import annotations
 
 import threading
@@ -63,10 +64,7 @@ __all__ = (
 
 CREATE_NO_WINDOW: int
 
-if sys.platform != "win32":
-    CREATE_NO_WINDOW = 0
-else:
-    CREATE_NO_WINDOW = 0x08000000
+CREATE_NO_WINDOW = 0 if sys.platform != "win32" else 0x08000000
 
 
 class AudioSource:
@@ -130,9 +128,7 @@ class PCMAudio(AudioSource):
 
     def read(self) -> bytes:
         ret = self.stream.read(OpusEncoder.FRAME_SIZE)
-        if len(ret) != OpusEncoder.FRAME_SIZE:
-            return b""
-        return ret
+        return b"" if len(ret) != OpusEncoder.FRAME_SIZE else ret
 
 
 class FFmpegAudio(AudioSource):
@@ -152,9 +148,7 @@ class FFmpegAudio(AudioSource):
             raise TypeError("parameter conflict: 'source' parameter cannot be a string when piping to stdin")
 
         args = [executable, *args]
-        kwargs = {"stdout": subprocess.PIPE}
-        kwargs.update(subprocess_kwargs)
-
+        kwargs = {"stdout": subprocess.PIPE} | subprocess_kwargs
         self._process: subprocess.Popen = self._spawn_process(args, **kwargs)
         self._stdout: IO[bytes] = self._process.stdout  # type: ignore
         self._stdin: Optional[IO[Bytes]] = None
@@ -172,7 +166,7 @@ class FFmpegAudio(AudioSource):
             process = subprocess.Popen(args, creationflags=CREATE_NO_WINDOW, **subprocess_kwargs)
         except FileNotFoundError:
             executable = args.partition(" ")[0] if isinstance(args, str) else args[0]
-            raise ClientException(executable + " was not found.") from None
+            raise ClientException(f"{executable} was not found.") from None
         except subprocess.SubprocessError as exc:
             raise ClientException(f"Popen failed: {exc.__class__.__name__}: {exc}") from exc
         else:
@@ -268,10 +262,20 @@ class FFmpegPCMAudio(FFmpegAudio):
         if isinstance(before_options, str):
             args.extend(shlex.split(before_options))
 
-        args.append("-i")
-        args.append("-" if pipe else source)
-        args.extend(("-f", "s16le", "-ar", "48000", "-ac", "2", "-loglevel", "warning"))
-
+        args.extend(
+            (
+                "-i",
+                "-" if pipe else source,
+                "-f",
+                "s16le",
+                "-ar",
+                "48000",
+                "-ac",
+                "2",
+                "-loglevel",
+                "warning",
+            )
+        )
         if isinstance(options, str):
             args.extend(shlex.split(options))
 
@@ -281,9 +285,7 @@ class FFmpegPCMAudio(FFmpegAudio):
 
     def read(self) -> bytes:
         ret = self._stdout.read(OpusEncoder.FRAME_SIZE)
-        if len(ret) != OpusEncoder.FRAME_SIZE:
-            return b""
-        return ret
+        return b"" if len(ret) != OpusEncoder.FRAME_SIZE else ret
 
     def is_opus(self) -> bool:
         return False
@@ -369,9 +371,7 @@ class FFmpegOpusAudio(FFmpegAudio):
         if isinstance(before_options, str):
             args.extend(shlex.split(before_options))
 
-        args.append("-i")
-        args.append("-" if pipe else source)
-
+        args.extend(("-i", "-" if pipe else source))
         codec = "copy" if codec in ("opus", "libopus") else "libopus"
 
         args.extend(
@@ -507,7 +507,7 @@ class FFmpegOpusAudio(FFmpegAudio):
         probefunc = fallback = None
 
         if isinstance(method, str):
-            probefunc = getattr(cls, "_probe_codec_" + method, None)
+            probefunc = getattr(cls, f"_probe_codec_{method}", None)
             if probefunc is None:
                 raise AttributeError(f"Invalid probe method {method!r}")
 
@@ -543,7 +543,11 @@ class FFmpegOpusAudio(FFmpegAudio):
 
     @staticmethod
     def _probe_codec_native(source, executable: str = "ffmpeg") -> Tuple[Optional[str], Optional[int]]:
-        exe = executable[:2] + "probe" if executable in ("ffmpeg", "avconv") else executable
+        exe = (
+            f"{executable[:2]}probe"
+            if executable in {"ffmpeg", "avconv"}
+            else executable
+        )
         args = [exe, "-v", "quiet", "-print_format", "json", "-show_streams", "-select_streams", "a:0", source]
         output = subprocess.check_output(args, timeout=20)
         codec = bitrate = None
@@ -566,13 +570,11 @@ class FFmpegOpusAudio(FFmpegAudio):
         output = out.decode("utf8")
         codec = bitrate = None
 
-        codec_match = re.search(r"Stream #0.*?Audio: (\w+)", output)
-        if codec_match:
-            codec = codec_match.group(1)
+        if codec_match := re.search(r"Stream #0.*?Audio: (\w+)", output):
+            codec = codec_match[1]
 
-        br_match = re.search(r"(\d+) [kK]b/s", output)
-        if br_match:
-            bitrate = max(int(br_match.group(1)), 512)
+        if br_match := re.search(r"(\d+) [kK]b/s", output):
+            bitrate = max(int(br_match[1]), 512)
 
         return codec, bitrate
 
